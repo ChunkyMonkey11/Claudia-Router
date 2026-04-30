@@ -1,0 +1,31 @@
+{
+  "port": 8082,
+  "defaultBackend": "nvidia",
+  "backends": {
+    "nvidia": {
+      "baseUrl": "https://integrate.api.nvidia.com/v1",
+      "apiKeyEnv": "NVIDIA_API_KEY",
+      "defaultModel": "qwen/qwen3-coder-480b-a35b-instruct"
+    },
+    "openrouter": {
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "apiKeyEnv": "OPENROUTER_API_KEY",
+      "defaultModel": "qwen/qwen-2.5-coder-32b-instruct"
+    },
+    "local": {
+      "baseUrl": "http://localhost:1234/v1",
+      "apiKeyEnv": "LOCAL_API_KEY",
+      "defaultModel": "local-model"
+    }
+  },
+  "modelMap": {
+    "claude-3-5-sonnet-latest": {
+      "backend": "nvidia",
+      "model": "qwen/qwen3-coder-480b-a35b-instruct"
+    },
+    "claude-opus-4-1": {
+      "backend": "nvidia",
+      "model": "qwen/qwen3-coder-480b-a35b-instruct"
+    }
+  }
+}
