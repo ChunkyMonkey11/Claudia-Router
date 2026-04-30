@@ -85,6 +85,7 @@ export interface OpenAIChatRequest {
   temperature?: number;
   tools?: OpenAITool[];
   tool_choice?: OpenAIToolChoice;
+  [key: string]: unknown;
 }
 
 export interface OpenAIChatResponse {
@@ -145,17 +146,35 @@ export interface ModelMapEntry {
   model: string;
 }
 
+export type ModelCapabilities = Record<string, boolean>;
+
+export interface ModelProfileEntry {
+  backend?: string;
+  providerModel?: string;
+  retryAttempts?: number;
+  retryBaseDelayMs?: number;
+  extraBody?: Record<string, unknown>;
+  notes?: string;
+  capabilities?: ModelCapabilities;
+}
+
 export interface ClaudiaConfig {
   port: number;
   defaultBackend: string;
   backends: Record<string, BackendConfig>;
   modelMap: Record<string, ModelMapEntry>;
+  modelProfiles?: Record<string, ModelProfileEntry>;
 }
 
 export interface RouteTarget {
   backendName: string;
   backend: BackendConfig;
   model: string;
+  retryAttempts?: number;
+  retryBaseDelayMs?: number;
+  extraBody?: Record<string, unknown>;
+  notes?: string;
+  capabilities?: ModelCapabilities;
 }
 
 export interface ProviderResult {

@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createOpenAIChatRequest, parseOpenAIChatResponse } from "../src/openai.js";
+import {
+  createOpenAIChatRequest,
+  parseOpenAIChatResponse,
+  providerStatusToClientStatus,
+  shouldRetryProviderStatus
+} from "../src/openai.js";
 import { buildAnthropicResponse } from "../src/anthropic.js";
 
 test("passes Anthropic tools through as OpenAI function tools", () => {
@@ -58,6 +63,34 @@ test("passes Anthropic tools through as OpenAI function tools", () => {
     function: {
       name: "Write"
     }
+  });
+});
+
+test("merges provider-specific extra body fields into OpenAI requests", () => {
+  const request = createOpenAIChatRequest(
+    {
+      model: "claude-3-5-sonnet-latest",
+      max_tokens: 128,
+      messages: [
+        {
+          role: "user",
+          content: "Say ok"
+        }
+      ]
+    },
+    "z-ai/glm4.7",
+    {
+      chat_template_kwargs: {
+        enable_thinking: true,
+        clear_thinking: false
+      }
+    }
+  );
+
+  assert.equal(request.model, "z-ai/glm4.7");
+  assert.deepEqual(request.chat_template_kwargs, {
+    enable_thinking: true,
+    clear_thinking: false
   });
 });
 
@@ -163,4 +196,15 @@ test("converts OpenAI tool calls into Anthropic tool_use response blocks", () =>
       }
     }
   ]);
+});
+
+test("preserves transient provider status semantics", () => {
+  assert.equal(providerStatusToClientStatus(429), 429);
+  assert.equal(providerStatusToClientStatus(503), 502);
+  assert.equal(providerStatusToClientStatus(401), 502);
+  assert.equal(providerStatusToClientStatus(400), 400);
+
+  assert.equal(shouldRetryProviderStatus(429), true);
+  assert.equal(shouldRetryProviderStatus(503), true);
+  assert.equal(shouldRetryProviderStatus(400), false);
 });

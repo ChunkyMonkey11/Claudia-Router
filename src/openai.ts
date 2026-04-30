@@ -13,8 +13,15 @@ import type {
 } from "./types.js";
 
 const PROVIDER_TIMEOUT_MS = 120_000;
+const PROVIDER_DEFAULT_MAX_ATTEMPTS = 3;
+const PROVIDER_DEFAULT_RETRY_BASE_MS = 500;
+const RETRYABLE_PROVIDER_STATUSES = new Set([408, 409, 429, 500, 502, 503, 504]);
 
-export function createOpenAIChatRequest(request: AnthropicMessageRequest, model: string): OpenAIChatRequest {
+export function createOpenAIChatRequest(
+  request: AnthropicMessageRequest,
+  model: string,
+  extraBody?: Record<string, unknown>
+): OpenAIChatRequest {
   const messages: OpenAIChatRequest["messages"] = [];
   const systemPrompt = normalizeSystemPrompt(request.system);
 
@@ -54,6 +61,10 @@ export function createOpenAIChatRequest(request: AnthropicMessageRequest, model:
 
   if (request.tool_choice) {
     openAIRequest.tool_choice = mapToolChoice(request.tool_choice);
+  }
+
+  if (extraBody) {
+    Object.assign(openAIRequest, extraBody);
   }
 
   return openAIRequest;
@@ -169,9 +180,13 @@ function mapToolChoice(toolChoice: NonNullable<AnthropicMessageRequest["tool_cho
 export async function callOpenAICompatibleBackend(args: {
   backend: BackendConfig;
   request: OpenAIChatRequest;
+  retryAttempts?: number;
+  retryBaseDelayMs?: number;
 }): Promise<ProviderResult> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), PROVIDER_TIMEOUT_MS);
+  const maxAttempts = Math.max(1, args.retryAttempts ?? PROVIDER_DEFAULT_MAX_ATTEMPTS);
+  const retryBaseDelayMs = Math.max(0, args.retryBaseDelayMs ?? PROVIDER_DEFAULT_RETRY_BASE_MS);
 
   try {
     const headers: Record<string, string> = {
@@ -182,19 +197,34 @@ export async function callOpenAICompatibleBackend(args: {
       headers.Authorization = `Bearer ${args.backend.apiKey}`;
     }
 
-    const response = await fetch(`${args.backend.baseUrl}/chat/completions`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(args.request),
-      signal: controller.signal
-    });
+    let response: Response | undefined;
+    let bodyText = "";
 
-    const bodyText = await response.text();
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      response = await fetch(`${args.backend.baseUrl}/chat/completions`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(args.request),
+        signal: controller.signal
+      });
+
+      bodyText = await response.text();
+      if (response.ok || !shouldRetryProviderStatus(response.status) || attempt === maxAttempts) {
+        break;
+      }
+
+      await sleep(getProviderRetryDelayMs(response, attempt, retryBaseDelayMs));
+    }
+
+    if (!response) {
+      throw new ClaudiaError("provider_error", "Provider request failed", 502);
+    }
+
     if (!response.ok) {
       throw new ClaudiaError(
         "provider_error",
         `Provider returned HTTP ${response.status}: ${truncateProviderBody(bodyText)}`,
-        response.status >= 500 ? 502 : 400
+        providerStatusToClientStatus(response.status)
       );
     }
 
@@ -273,4 +303,57 @@ function truncateProviderBody(body: string): string {
   }
 
   return body.length > 500 ? `${body.slice(0, 500)}...` : body;
+}
+
+export function providerStatusToClientStatus(providerStatus: number): number {
+  if (providerStatus === 401 || providerStatus === 403) {
+    return 502;
+  }
+
+  if (providerStatus === 408 || providerStatus === 429) {
+    return providerStatus;
+  }
+
+  if (providerStatus >= 500) {
+    return 502;
+  }
+
+  return 400;
+}
+
+export function shouldRetryProviderStatus(providerStatus: number): boolean {
+  return RETRYABLE_PROVIDER_STATUSES.has(providerStatus);
+}
+
+function getProviderRetryDelayMs(response: Response, attempt: number, retryBaseDelayMs: number): number {
+  const retryAfter = parseRetryAfter(response.headers.get("retry-after"));
+  if (retryAfter !== undefined) {
+    return retryAfter;
+  }
+
+  return retryBaseDelayMs * 2 ** (attempt - 1);
+}
+
+function parseRetryAfter(value: string | null): number | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const seconds = Number(value);
+  if (Number.isFinite(seconds) && seconds >= 0) {
+    return seconds * 1000;
+  }
+
+  const retryAt = Date.parse(value);
+  if (Number.isNaN(retryAt)) {
+    return undefined;
+  }
+
+  return Math.max(0, retryAt - Date.now());
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }

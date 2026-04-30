@@ -30,10 +30,12 @@ export async function routeMessages(args: {
     );
   }
 
-  const openAIRequest = createOpenAIChatRequest(request, target.model);
+  const openAIRequest = createOpenAIChatRequest(request, target.model, target.extraBody);
   const providerResult = await callOpenAICompatibleBackend({
     backend: target.backend,
-    request: openAIRequest
+    request: openAIRequest,
+    retryAttempts: target.retryAttempts,
+    retryBaseDelayMs: target.retryBaseDelayMs
   });
 
   const response = buildAnthropicResponse(providerResult);
@@ -51,8 +53,9 @@ export async function routeMessages(args: {
 }
 
 export function resolveRouteTarget(config: ClaudiaConfig, sourceModel: string): RouteTarget {
+  const profile = config.modelProfiles?.[sourceModel];
   const mapped = config.modelMap[sourceModel];
-  const backendName = mapped?.backend ?? config.defaultBackend;
+  const backendName = profile?.backend ?? mapped?.backend ?? config.defaultBackend;
   const backend = config.backends[backendName];
 
   if (!backend) {
@@ -62,6 +65,11 @@ export function resolveRouteTarget(config: ClaudiaConfig, sourceModel: string): 
   return {
     backendName,
     backend,
-    model: mapped?.model ?? backend.defaultModel
+    model: profile?.providerModel ?? mapped?.model ?? backend.defaultModel,
+    retryAttempts: profile?.retryAttempts,
+    retryBaseDelayMs: profile?.retryBaseDelayMs,
+    extraBody: profile?.extraBody,
+    notes: profile?.notes,
+    capabilities: profile?.capabilities
   };
 }

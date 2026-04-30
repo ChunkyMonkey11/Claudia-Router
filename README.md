@@ -82,7 +82,7 @@ LOG_LEVEL=info
     "nvidia": {
       "baseUrl": "https://integrate.api.nvidia.com/v1",
       "apiKeyEnv": "NVIDIA_API_KEY",
-      "defaultModel": "qwen/qwen3-coder-480b-a35b-instruct"
+      "defaultModel": "stepfun-ai/step-3.5-flash"
     },
     "openrouter": {
       "baseUrl": "https://openrouter.ai/api/v1",
@@ -95,13 +95,127 @@ LOG_LEVEL=info
       "defaultModel": "local-model"
     }
   },
-  "modelMap": {
+  "modelProfiles": {
     "claude-3-5-sonnet-latest": {
       "backend": "nvidia",
-      "model": "qwen/qwen3-coder-480b-a35b-instruct"
+      "providerModel": "stepfun-ai/step-3.5-flash",
+      "retryAttempts": 3,
+      "retryBaseDelayMs": 500,
+      "notes": "Fast NVIDIA coding profile",
+      "capabilities": {
+        "toolCalls": true,
+        "coding": true
+      }
+    },
+    "claude-opus-4-1": {
+      "backend": "nvidia",
+      "providerModel": "z-ai/glm4.7",
+      "retryAttempts": 3,
+      "retryBaseDelayMs": 500,
+      "extraBody": {
+        "chat_template_kwargs": {
+          "enable_thinking": true,
+          "clear_thinking": false
+        }
+      },
+      "notes": "Higher-quality GLM coding profile; slower because thinking is enabled",
+      "capabilities": {
+        "toolCalls": true,
+        "coding": true
+      }
+    },
+    "claude-3-5-sonnet-glm": {
+      "backend": "nvidia",
+      "providerModel": "z-ai/glm4.7",
+      "retryAttempts": 3,
+      "retryBaseDelayMs": 500,
+      "extraBody": {
+        "chat_template_kwargs": {
+          "enable_thinking": true,
+          "clear_thinking": false
+        }
+      },
+      "notes": "Explicit GLM 4.7 profile for harder coding tasks",
+      "capabilities": {
+        "toolCalls": true,
+        "coding": true
+      }
+    },
+    "claude-3-5-sonnet-qwen": {
+      "backend": "nvidia",
+      "providerModel": "qwen/qwen3.5-122b-a10b",
+      "retryAttempts": 3,
+      "retryBaseDelayMs": 500,
+      "notes": "Qwen fallback NVIDIA coding profile",
+      "capabilities": {
+        "toolCalls": true,
+        "coding": true
+      }
+    },
+    "claude-3-haiku-latest": {
+      "backend": "nvidia",
+      "providerModel": "nvidia/nemotron-mini-4b-instruct",
+      "retryAttempts": 1,
+      "retryBaseDelayMs": 250,
+      "notes": "Smoke-test/free-small NVIDIA profile",
+      "capabilities": {
+        "toolCalls": false,
+        "coding": false
+      }
+    }
+  },
+  "modelMap": {
+    "legacy-claude-3-5-sonnet-latest": {
+      "backend": "nvidia",
+      "model": "stepfun-ai/step-3.5-flash"
     }
   }
 }
+```
+
+`modelProfiles` is the preferred model routing config. Each key is the incoming Claude-style model alias; `backend` selects a configured backend, and `providerModel` is the model sent to that provider. If both `modelProfiles` and legacy `modelMap` contain the same alias, `modelProfiles` wins. `modelMap` remains supported for simple `{ "backend", "model" }` mappings.
+
+`retryAttempts` is the total number of provider attempts for that profile, including the first request. `retryBaseDelayMs` is the exponential backoff base delay between retryable provider responses. `extraBody` is merged into the provider chat-completions JSON body for model-specific options such as NVIDIA `chat_template_kwargs`. `capabilities` is advisory metadata for humans and future routing policy; it does not force provider behavior.
+
+## NVIDIA Model Set
+
+The default config includes the NVIDIA free/shared endpoint profiles that have worked well with Claude Code-style loops:
+
+| Router alias | NVIDIA model | Intended use |
+| --- | --- | --- |
+| `claude-3-5-sonnet-latest` | `stepfun-ai/step-3.5-flash` | Fast default for day-to-day coding/tool loops |
+| `claude-opus-4-1` | `z-ai/glm4.7` | Slower quality profile with GLM thinking enabled |
+| `claude-3-5-sonnet-glm` | `z-ai/glm4.7` | Explicit GLM 4.7 alias for harder coding tasks |
+| `claude-3-5-sonnet-qwen` | `qwen/qwen3.5-122b-a10b` | Alternate/fallback coding model |
+| `claude-3-haiku-latest` | `nvidia/nemotron-mini-4b-instruct` | Smoke test for auth, routing, retries, and simple requests |
+
+Use the fast default:
+
+```bash
+ANTHROPIC_BASE_URL=http://localhost:8082 \
+ANTHROPIC_AUTH_TOKEN=dummy \
+ANTHROPIC_MODEL=claude-3-5-sonnet-latest \
+ANTHROPIC_DEFAULT_SONNET_MODEL=claude-3-5-sonnet-latest \
+ANTHROPIC_DEFAULT_HAIKU_MODEL=claude-3-haiku-latest \
+claude --model claude-3-5-sonnet-latest
+```
+
+Switch to GLM for a harder task:
+
+```bash
+ANTHROPIC_BASE_URL=http://localhost:8082 \
+ANTHROPIC_AUTH_TOKEN=dummy \
+ANTHROPIC_MODEL=claude-3-5-sonnet-glm \
+claude --model claude-3-5-sonnet-glm
+```
+
+Smoke-test the router:
+
+```bash
+ANTHROPIC_BASE_URL=http://localhost:8082 \
+ANTHROPIC_AUTH_TOKEN=dummy \
+ANTHROPIC_MODEL=claude-3-haiku-latest \
+claude --model claude-3-haiku-latest
 ```
 
 ## Claude-Style Request Shape

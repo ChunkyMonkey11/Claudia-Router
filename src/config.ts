@@ -11,20 +11,35 @@ const backendSchema = z.object({
   defaultModel: z.string().min(1)
 });
 
+const modelMapEntrySchema = z.object({
+  backend: z.string().min(1),
+  model: z.string().min(1)
+});
+
+const modelProfileEntrySchema = z
+  .object({
+    backend: z.string().min(1).optional(),
+    providerModel: z.string().min(1).optional(),
+    model: z.string().min(1).optional(),
+    retryAttempts: z.number().int().nonnegative().optional(),
+    retryBaseDelayMs: z.number().int().nonnegative().optional(),
+    extraBody: z.record(z.unknown()).optional(),
+    notes: z.string().optional(),
+    capabilities: z.record(z.boolean()).optional()
+  })
+  .transform(({ model, ...profile }) => ({
+    ...profile,
+    providerModel: profile.providerModel ?? model
+  }));
+
 const configSchema = z.object({
   port: z.number().int().positive().default(8082),
   defaultBackend: z.string().min(1),
   backends: z.record(backendSchema).refine((value) => Object.keys(value).length > 0, {
     message: "At least one backend must be configured"
   }),
-  modelMap: z
-    .record(
-      z.object({
-        backend: z.string().min(1),
-        model: z.string().min(1)
-      })
-    )
-    .default({})
+  modelMap: z.record(modelMapEntrySchema).default({}),
+  modelProfiles: z.record(modelProfileEntrySchema).default({})
 });
 
 export function loadConfig(configPath = process.env.CLAUDIA_CONFIG ?? "./config.json"): ClaudiaConfig {
@@ -74,6 +89,16 @@ export function loadConfig(configPath = process.env.CLAUDIA_CONFIG ?? "./config.
       throw new ClaudiaError(
         "configuration_error",
         `Model map entry ${sourceModel} references missing backend: ${mapping.backend}`,
+        500
+      );
+    }
+  }
+
+  for (const [sourceModel, profile] of Object.entries(config.modelProfiles)) {
+    if (profile.backend && !config.backends[profile.backend]) {
+      throw new ClaudiaError(
+        "configuration_error",
+        `Model profile ${sourceModel} references missing backend: ${profile.backend}`,
         500
       );
     }
