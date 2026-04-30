@@ -23,13 +23,35 @@ It is useful for experimenting with Claude-style coding workflows while using ba
 
 ## Quick Start
 
+Prerequisites:
+
+- Node.js 18 or newer
+- Claude Code CLI installed as `claude`
+- NVIDIA API key with access to NVIDIA hosted endpoints
+
 ```sh
-git clone https://github.com/YOUR_USERNAME/claudia-router
-cd claudia-router
+git clone https://github.com/ChunkyMonkey11/Claudia-Router.git
+cd Claudia-Router
 npm install
-cp .env.example .env
-cp config.example.json config.json
+npm run setup
+```
+
+Edit `.env` and set:
+
+```env
+NVIDIA_API_KEY=your_nvidia_key_here
+```
+
+Start the router:
+
+```sh
 npm run dev
+```
+
+Optional: install the Claude wrapper command locally:
+
+```sh
+npm link
 ```
 
 Test the server:
@@ -55,6 +77,27 @@ curl http://localhost:8082/v1/messages \
     ]
   }'
 ```
+
+For Claude Code, keep the router running and start Claude in another terminal:
+
+```sh
+npm run claude:fast
+```
+
+After `npm link`, you can use the wrapper from any coding project:
+
+```sh
+cd /path/to/your/project
+claudia-claude
+```
+
+The wrapper runs the normal `claude` CLI with `ANTHROPIC_BASE_URL`, dummy auth, and the default router model already set. Pass normal Claude Code arguments as usual:
+
+```sh
+claudia-claude --model claude-3-5-sonnet-glm
+```
+
+The fast script and default wrapper route `claude-3-5-sonnet-latest` to NVIDIA `stepfun-ai/step-3.5-flash`. Use `npm run claude:glm` for the slower GLM quality profile, or `npm run claude:smoke` to test routing with the smallest configured model.
 
 ## NVIDIA Setup
 
@@ -192,30 +235,31 @@ The default config includes the NVIDIA free/shared endpoint profiles that have w
 Use the fast default:
 
 ```bash
-ANTHROPIC_BASE_URL=http://localhost:8082 \
-ANTHROPIC_AUTH_TOKEN=dummy \
-ANTHROPIC_MODEL=claude-3-5-sonnet-latest \
-ANTHROPIC_DEFAULT_SONNET_MODEL=claude-3-5-sonnet-latest \
-ANTHROPIC_DEFAULT_HAIKU_MODEL=claude-3-haiku-latest \
-claude --model claude-3-5-sonnet-latest
+npm run claude:fast
+```
+
+Or from any project after `npm link`:
+
+```bash
+claudia-claude
 ```
 
 Switch to GLM for a harder task:
 
 ```bash
-ANTHROPIC_BASE_URL=http://localhost:8082 \
-ANTHROPIC_AUTH_TOKEN=dummy \
-ANTHROPIC_MODEL=claude-3-5-sonnet-glm \
-claude --model claude-3-5-sonnet-glm
+npm run claude:glm
+```
+
+Or:
+
+```bash
+claudia-claude --model claude-3-5-sonnet-glm
 ```
 
 Smoke-test the router:
 
 ```bash
-ANTHROPIC_BASE_URL=http://localhost:8082 \
-ANTHROPIC_AUTH_TOKEN=dummy \
-ANTHROPIC_MODEL=claude-3-haiku-latest \
-claude --model claude-3-haiku-latest
+npm run claude:smoke
 ```
 
 ## Claude-Style Request Shape
