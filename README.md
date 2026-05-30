@@ -15,7 +15,7 @@ It is useful for experimenting with Claude-style coding workflows while using ba
 
 ## What it does not do yet
 
-- Streaming
+- Token-by-token provider streaming passthrough
 - Full Claude Code compatibility guarantee
 - Prompt caching
 - Vision inputs
@@ -36,16 +36,20 @@ npm install
 npm run setup
 ```
 
-Edit `.env` and set:
-
-```env
-NVIDIA_API_KEY=your_nvidia_key_here
-```
+`npm run setup` checks Node.js and Claude Code, creates `.env` and `config.json`, securely
+prompts for your NVIDIA API key when needed, and runs a real NVIDIA smoke request. It
+finishes by printing the exact command to start the router.
 
 Start the router:
 
 ```sh
 npm run dev
+```
+
+Run the local prerequisite checks again at any time:
+
+```sh
+npm run doctor
 ```
 
 Optional: install the Claude wrapper command locally:
@@ -91,11 +95,25 @@ cd /path/to/your/project
 claudia-claude
 ```
 
-The wrapper runs the normal `claude` CLI with `ANTHROPIC_BASE_URL`, dummy auth, and the default router model already set. Pass normal Claude Code arguments as usual:
+The wrapper runs the normal `claude` CLI with `ANTHROPIC_BASE_URL` pointed to the local router and the default router model already set. By default, it uses your existing Claude Code login (managed credentials). Pass normal Claude Code arguments as usual:
 
 ```sh
 claudia-claude --model claude-3-5-sonnet-glm
 ```
+
+If you are not logged into Claude Code, enable local auth. This supplies a dummy token to the local router without requiring an Anthropic login:
+
+```sh
+claudia-claude --local-auth
+```
+
+From this repository, use:
+
+```sh
+npm run claude:fast -- --local-auth
+```
+
+If you see an authentication conflict warning, remove `--local-auth` when using a managed Claude Code login. Claude managed credentials are sent only to the local router; your NVIDIA key is sent to NVIDIA by the router.
 
 The fast script and default wrapper route `claude-3-5-sonnet-latest` to NVIDIA `stepfun-ai/step-3.5-flash`. Use `npm run claude:glm` for the slower GLM quality profile, or `npm run claude:smoke` to test routing with the smallest configured model.
 
@@ -319,12 +337,13 @@ Launch Claude Code against the local router:
 
 ```sh
 ANTHROPIC_BASE_URL=http://localhost:8082 \
-ANTHROPIC_AUTH_TOKEN=dummy \
 ANTHROPIC_MODEL=claude-3-5-sonnet-latest \
 ANTHROPIC_DEFAULT_SONNET_MODEL=claude-3-5-sonnet-latest \
 ANTHROPIC_DEFAULT_HAIKU_MODEL=claude-3-5-sonnet-latest \
 claude --model claude-3-5-sonnet-latest
 ```
+
+If you are not logged into Claude Code, add `ANTHROPIC_AUTH_TOKEN=dummy` for this local gateway test. Do not set it when using a managed Claude Code login because Claude Code will report an authentication conflict.
 
 Then ask Claude Code to do a safe file operation:
 
@@ -371,14 +390,14 @@ Before tagging a release:
 ## Limitations
 
 - Text-only
-- Non-streaming only
+- Streaming responses are buffered until the provider completes, then returned as Anthropic SSE events
 - No vision
 - No perfect Claude Code compatibility guarantee
 - Provider quality depends on selected model
 
 ## Roadmap
 
-- Streaming support
+- Token-by-token provider streaming passthrough
 - Broader Claude Code compatibility tests
 - Request replay logs
 - Cost estimation

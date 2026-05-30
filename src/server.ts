@@ -1,4 +1,5 @@
 import express, { type ErrorRequestHandler, type RequestHandler } from "express";
+import { buildAnthropicStream } from "./anthropic.js";
 import { ClaudiaError, errorResponse, toClaudiaError } from "./errors.js";
 import { logger } from "./logger.js";
 import { routeMessages } from "./router.js";
@@ -45,6 +46,15 @@ export function createServer(config: ClaudiaConfig) {
         "message routed"
       );
 
+      if (isStreamingRequest(req.body)) {
+        res.status(200);
+        res.setHeader("Content-Type", "text/event-stream");
+        res.setHeader("Cache-Control", "no-cache");
+        res.setHeader("Connection", "keep-alive");
+        res.send(buildAnthropicStream(result.response));
+        return;
+      }
+
       res.status(200).json(result.response);
     } catch (error) {
       next(error);
@@ -64,6 +74,10 @@ export function startServer(config: ClaudiaConfig) {
   });
 
   return server;
+}
+
+function isStreamingRequest(body: unknown): boolean {
+  return typeof body === "object" && body !== null && "stream" in body && body.stream === true;
 }
 
 const attachRequestId: RequestHandler = (req, res, next) => {

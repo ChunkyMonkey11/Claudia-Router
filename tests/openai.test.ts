@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  callOpenAICompatibleBackend,
   createOpenAIChatRequest,
   parseOpenAIChatResponse,
   providerStatusToClientStatus,
   shouldRetryProviderStatus
 } from "../src/openai.js";
-import { buildAnthropicResponse } from "../src/anthropic.js";
+import { buildAnthropicResponse, buildAnthropicStream } from "../src/anthropic.js";
 
 test("passes Anthropic tools through as OpenAI function tools", () => {
   const request = createOpenAIChatRequest(
@@ -92,6 +93,7 @@ test("merges provider-specific extra body fields into OpenAI requests", () => {
     enable_thinking: true,
     clear_thinking: false
   });
+  assert.equal(request.stream, false);
 });
 
 test("converts Anthropic tool results into OpenAI tool messages", () => {
@@ -207,4 +209,103 @@ test("preserves transient provider status semantics", () => {
   assert.equal(shouldRetryProviderStatus(429), true);
   assert.equal(shouldRetryProviderStatus(503), true);
   assert.equal(shouldRetryProviderStatus(400), false);
+});
+
+test("polls pending NVIDIA responses until the result is ready", async () => {
+  const originalFetch = globalThis.fetch;
+  const urls: string[] = [];
+
+  globalThis.fetch = async (input) => {
+    urls.push(String(input));
+
+    if (urls.length === 1) {
+      return new Response(JSON.stringify({ requestId: "request-123" }), {
+        status: 202,
+        headers: {
+          "retry-after": "0"
+        }
+      });
+    }
+
+    return new Response(
+      JSON.stringify({
+        model: "test-model",
+        choices: [
+          {
+            message: {
+              role: "assistant",
+              content: "ok"
+            },
+            finish_reason: "stop"
+          }
+        ]
+      }),
+      {
+        status: 200
+      }
+    );
+  };
+
+  try {
+    const result = await callOpenAICompatibleBackend({
+      backend: {
+        baseUrl: "https://provider.test/v1",
+        apiKeyEnv: "TEST_API_KEY",
+        defaultModel: "test-model"
+      },
+      request: {
+        model: "test-model",
+        messages: [
+          {
+            role: "user",
+            content: "Say ok"
+          }
+        ],
+        max_tokens: 32
+      }
+    });
+
+    assert.equal(result.text, "ok");
+    assert.deepEqual(urls, [
+      "https://provider.test/v1/chat/completions",
+      "https://provider.test/v1/status/request-123"
+    ]);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("formats completed responses as Anthropic SSE events", () => {
+  const stream = buildAnthropicStream({
+    id: "msg_test",
+    type: "message",
+    role: "assistant",
+    model: "test-model",
+    content: [
+      {
+        type: "text",
+        text: "Creating the file."
+      },
+      {
+        type: "tool_use",
+        id: "toolu_123",
+        name: "Write",
+        input: {
+          path: "hello.md"
+        }
+      }
+    ],
+    stop_reason: "tool_use",
+    stop_sequence: null,
+    usage: {
+      input_tokens: 10,
+      output_tokens: 5
+    }
+  });
+
+  assert.match(stream, /event: message_start/);
+  assert.match(stream, /"type":"text_delta","text":"Creating the file."/);
+  assert.match(stream, /"type":"input_json_delta","partial_json":"{\\"path\\":\\"hello.md\\"}"/);
+  assert.match(stream, /"stop_reason":"tool_use"/);
+  assert.match(stream, /event: message_stop/);
 });

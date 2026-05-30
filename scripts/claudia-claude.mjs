@@ -1,24 +1,20 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process";
+import { buildClaudeEnv, buildClaudeArgs } from "./claude-wrapper.module.mjs";
 
 const args = process.argv.slice(2);
-const hasModelArg = args.some((arg, index) => arg === "--model" || arg.startsWith("--model=") || args[index - 1] === "--model");
 const model = process.env.CLAUDIA_CLAUDE_MODEL ?? "claude-3-5-sonnet-latest";
 
-const claudeArgs = hasModelArg ? args : ["--model", model, ...args];
+const claudeArgs = buildClaudeArgs(args, model);
+const env = buildClaudeEnv(process.env, model, args);
+
+if (env.ANTHROPIC_AUTH_TOKEN === "dummy" && !process.env.ANTHROPIC_AUTH_TOKEN) {
+  console.error("Claudia Router local auth enabled. Using a dummy token for the local router.");
+}
 
 const child = spawn("claude", claudeArgs, {
   stdio: "inherit",
-  env: {
-    ...process.env,
-    ANTHROPIC_BASE_URL: process.env.ANTHROPIC_BASE_URL ?? "http://localhost:8082",
-    ANTHROPIC_AUTH_TOKEN: process.env.ANTHROPIC_AUTH_TOKEN ?? "dummy",
-    ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL ?? model,
-    ANTHROPIC_DEFAULT_SONNET_MODEL:
-      process.env.ANTHROPIC_DEFAULT_SONNET_MODEL ?? "claude-3-5-sonnet-latest",
-    ANTHROPIC_DEFAULT_HAIKU_MODEL:
-      process.env.ANTHROPIC_DEFAULT_HAIKU_MODEL ?? "claude-3-haiku-latest"
-  }
+  env
 });
 
 child.on("exit", (code, signal) => {

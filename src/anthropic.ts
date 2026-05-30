@@ -110,6 +110,97 @@ export function buildAnthropicResponse(args: {
   };
 }
 
+export function buildAnthropicStream(response: AnthropicMessageResponse): string {
+  const events = [
+    formatSseEvent("message_start", {
+      type: "message_start",
+      message: {
+        ...response,
+        content: [],
+        stop_reason: null,
+        stop_sequence: null,
+        usage: {
+          input_tokens: response.usage.input_tokens,
+          output_tokens: 0
+        }
+      }
+    })
+  ];
+
+  for (const [index, block] of response.content.entries()) {
+    if (block.type === "text") {
+      events.push(
+        formatSseEvent("content_block_start", {
+          type: "content_block_start",
+          index,
+          content_block: {
+            type: "text",
+            text: ""
+          }
+        }),
+        formatSseEvent("content_block_delta", {
+          type: "content_block_delta",
+          index,
+          delta: {
+            type: "text_delta",
+            text: block.text
+          }
+        })
+      );
+    } else {
+      events.push(
+        formatSseEvent("content_block_start", {
+          type: "content_block_start",
+          index,
+          content_block: {
+            type: "tool_use",
+            id: block.id,
+            name: block.name,
+            input: {}
+          }
+        }),
+        formatSseEvent("content_block_delta", {
+          type: "content_block_delta",
+          index,
+          delta: {
+            type: "input_json_delta",
+            partial_json: JSON.stringify(block.input)
+          }
+        })
+      );
+    }
+
+    events.push(
+      formatSseEvent("content_block_stop", {
+        type: "content_block_stop",
+        index
+      })
+    );
+  }
+
+  events.push(
+    formatSseEvent("message_delta", {
+      type: "message_delta",
+      delta: {
+        stop_reason: response.stop_reason,
+        stop_sequence: response.stop_sequence
+      },
+      usage: {
+        output_tokens: response.usage.output_tokens
+      }
+    }),
+    formatSseEvent("message_stop", {
+      type: "message_stop"
+    })
+  );
+
+  return events.join("");
+}
+
+function formatSseEvent(event: string, data: unknown): string {
+  return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+}
+
 function mapStopReason(finishReason: string | null): AnthropicMessageResponse["stop_reason"] {
   if (finishReason === "length") {
     return "max_tokens";

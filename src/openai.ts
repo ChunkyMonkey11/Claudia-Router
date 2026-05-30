@@ -15,6 +15,7 @@ import type {
 const PROVIDER_TIMEOUT_MS = 120_000;
 const PROVIDER_DEFAULT_MAX_ATTEMPTS = 3;
 const PROVIDER_DEFAULT_RETRY_BASE_MS = 500;
+const PROVIDER_DEFAULT_POLL_DELAY_MS = 500;
 const RETRYABLE_PROVIDER_STATUSES = new Set([408, 409, 429, 500, 502, 503, 504]);
 
 export function createOpenAIChatRequest(
@@ -66,6 +67,10 @@ export function createOpenAIChatRequest(
   if (extraBody) {
     Object.assign(openAIRequest, extraBody);
   }
+
+  // Claudia currently consumes provider responses as one JSON document.
+  // Force JSON even for providers whose model default is SSE streaming.
+  openAIRequest.stream = false;
 
   return openAIRequest;
 }
@@ -209,6 +214,16 @@ export async function callOpenAICompatibleBackend(args: {
       });
 
       bodyText = await response.text();
+      if (response.status === 202) {
+        ({ response, bodyText } = await pollPendingProviderResponse({
+          backend: args.backend,
+          headers,
+          response,
+          bodyText,
+          signal: controller.signal
+        }));
+      }
+
       if (response.ok || !shouldRetryProviderStatus(response.status) || attempt === maxAttempts) {
         break;
       }
@@ -303,6 +318,56 @@ function truncateProviderBody(body: string): string {
   }
 
   return body.length > 500 ? `${body.slice(0, 500)}...` : body;
+}
+
+async function pollPendingProviderResponse(args: {
+  backend: BackendConfig;
+  headers: Record<string, string>;
+  response: Response;
+  bodyText: string;
+  signal: AbortSignal;
+}): Promise<{ response: Response; bodyText: string }> {
+  const requestId = getPendingRequestId(args.response, args.bodyText);
+  let response = args.response;
+  let bodyText = args.bodyText;
+
+  while (response.status === 202) {
+    await sleep(getProviderRetryDelayMs(response, 1, PROVIDER_DEFAULT_POLL_DELAY_MS));
+    response = await fetch(`${args.backend.baseUrl}/status/${encodeURIComponent(requestId)}`, {
+      method: "GET",
+      headers: args.headers,
+      signal: args.signal
+    });
+    bodyText = await response.text();
+  }
+
+  return {
+    response,
+    bodyText
+  };
+}
+
+function getPendingRequestId(response: Response, bodyText: string): string {
+  const headerRequestId =
+    response.headers.get("nvcf-reqid") ??
+    response.headers.get("request-id") ??
+    response.headers.get("x-request-id");
+
+  if (headerRequestId) {
+    return headerRequestId;
+  }
+
+  try {
+    const parsed = JSON.parse(bodyText) as Record<string, unknown>;
+    const bodyRequestId = parsed.requestId ?? parsed.request_id ?? parsed.id;
+    if (typeof bodyRequestId === "string" && bodyRequestId.length > 0) {
+      return bodyRequestId;
+    }
+  } catch {
+    // The provider error below has the useful client-facing context.
+  }
+
+  throw new ClaudiaError("provider_error", "Provider returned HTTP 202 without a request ID", 502);
 }
 
 export function providerStatusToClientStatus(providerStatus: number): number {

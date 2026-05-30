@@ -26,6 +26,7 @@
   "homepage": "https://github.com/ChunkyMonkey11/Claudia-Router#readme",
   "scripts": {
     "setup": "node scripts/setup.mjs",
+    "doctor": "node scripts/doctor.mjs",
     "dev": "tsx src/index.ts",
     "build": "tsc",
     "start": "npm run build && node dist/index.js",
