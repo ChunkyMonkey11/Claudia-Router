@@ -3,6 +3,14 @@
  * This module is testable and used by claudia-claude.mjs.
  */
 
+// Shortcut names mapping to full model profile names
+const MODEL_SHORTCUTS = {
+  fast: "claude-3-5-sonnet-latest",
+  glm: "claude-3-5-sonnet-glm",
+  qwen: "claude-3-5-sonnet-qwen",
+  smoke: "claude-3-haiku-latest"
+};
+
 /**
  * Build the environment object for the Claude Code subprocess.
  * @param {Record<string, string>} userEnv - The current process.env
@@ -42,24 +50,71 @@ export function buildClaudeEnv(userEnv, argsDefaultModel = undefined, args = [])
  */
 export function buildClaudeArgs(args, defaultModel) {
   const claudeArgs = args.filter((arg) => arg !== "--local-auth");
-  const hasModelArg = claudeArgs.some((arg, index) =>
-    arg === "--model" || arg.startsWith("--model=") || claudeArgs[index - 1] === "--model"
+
+  // Handle 'models' command - pass through without adding default model
+  if (claudeArgs.includes("models")) {
+    return claudeArgs;
+  }
+
+  // Expand model shortcuts
+  const expandedArgs = expandShortcuts(claudeArgs);
+
+  const hasModelArg = expandedArgs.some((arg, index) =>
+    arg === "--model" || arg.startsWith("--model=") || expandedArgs[index - 1] === "--model"
   );
-  return hasModelArg ? claudeArgs : ["--model", defaultModel, ...claudeArgs];
+  return hasModelArg ? expandedArgs : ["--model", defaultModel, ...expandedArgs];
 }
 
 export function resolveClaudeModel(args, defaultModel = "claude-3-5-sonnet-latest") {
+  // Check for --models command first
+  if (args.includes("models")) {
+    return null; // Signal that this is a models command
+  }
+
   const modelIndex = args.indexOf("--model");
   if (modelIndex >= 0 && args[modelIndex + 1]) {
-    return args[modelIndex + 1];
+    return expandShortcut(args[modelIndex + 1]);
   }
 
   const combinedModel = args.find((arg) => arg.startsWith("--model="));
   if (combinedModel) {
-    return combinedModel.slice("--model=".length);
+    return expandShortcut(combinedModel.slice("--model=".length));
   }
 
   return defaultModel;
+}
+
+/**
+ * Expand model shortcuts to full names.
+ * @param {string} model - Model name or shortcut
+ * @returns {string} Expanded model name
+ */
+export function expandShortcut(model) {
+  const normalized = model.toLowerCase();
+  return MODEL_SHORTCUTS[normalized] ?? model;
+}
+
+/**
+ * Expand model shortcuts in the arguments list.
+ * @param {string[]} args - Arguments array
+ * @returns {string[]} Arguments with shortcuts expanded
+ */
+function expandShortcuts(args) {
+  const result = [];
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg.startsWith("--model=")) {
+      const model = arg.slice("--model=".length);
+      result.push(`--model=${expandShortcut(model)}`);
+    } else if (arg === "--model" && i + 1 < args.length) {
+      result.push(arg);
+      result.push(expandShortcut(args[i + 1]));
+      i++; // Skip the next arg as we've handled it
+    } else {
+      result.push(arg);
+    }
+  }
+  return result;
 }
 
 function usesLocalAuth(args, userEnv) {

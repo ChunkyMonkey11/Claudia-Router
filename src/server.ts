@@ -67,13 +67,51 @@ export function createServer(config: ClaudiaConfig) {
   return app;
 }
 
+function handleStartupError(error: NodeJS.ErrnoException, port: number): never {
+  if (error.code === "EADDRINUSE") {
+    logger.fatal(
+      { port, error: error.message },
+      "Failed to start: port is already in use"
+    );
+    console.error(
+      `Failed to start Claudia Router: port ${port} is already in use.\n` +
+      `Stop the existing router or change the port in config.json.`
+    );
+  } else if (error.code === "EACCES") {
+    logger.fatal(
+      { port, error: error.message },
+      "Failed to start: permission denied"
+    );
+    console.error(
+      `Failed to start Claudia Router: permission denied on port ${port}.\n` +
+      `You need elevated privileges to bind to this port, or choose a port >= 1024.`
+    );
+  } else {
+    logger.fatal(
+      { port, error: error.message, code: error.code },
+      "Failed to start server"
+    );
+    console.error(`Failed to start Claudia Router: ${error.message}`);
+  }
+  process.exit(1);
+}
+
 export function startServer(config: ClaudiaConfig) {
   const app = createServer(config);
-  const server = app.listen(config.port, () => {
-    logger.info({ port: config.port }, "claudia-router listening");
-  });
 
-  return server;
+  try {
+    const server = app.listen(config.port, () => {
+      logger.info({ port: config.port }, "claudia-router listening");
+    });
+
+    server.on("error", (error: NodeJS.ErrnoException) => {
+      handleStartupError(error, config.port);
+    });
+
+    return server;
+  } catch (error) {
+    handleStartupError(error as NodeJS.ErrnoException, config.port);
+  }
 }
 
 function isStreamingRequest(body: unknown): boolean {

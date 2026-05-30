@@ -92,3 +92,18 @@ test("returns Anthropic SSE events for streaming requests", async () => {
     });
   }
 });
+
+test("error messages include port number and actionable guidance", () => {
+  // EADDRINUSE message template
+  const addrInUseMsg = `Failed to start Claudia Router: port 8082 is already in use.
+Stop the existing router or change the port in config.json.`;
+  assert.ok(addrInUseMsg.includes("port"), "EADDRINUSE mentions port");
+  assert.ok(addrInUseMsg.includes("already in use"), "EADDRINUSE mentions conflict");
+  assert.ok(addrInUseMsg.includes("config.json"), "EADDRINUSE suggests fix");
+
+  // EACCES message template
+  const accesMsg = `Failed to start Claudia Router: permission denied on port 8082.
+You need elevated privileges to bind to this port, or choose a port >= 1024.`;
+  assert.ok(accesMsg.includes("permission"), "EACCES mentions permission");
+  assert.ok(accesMsg.includes("choose a port >= 1024"), "EACCES suggests solution");
+});

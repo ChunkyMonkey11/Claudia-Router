@@ -35,9 +35,9 @@
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
     "check": "npm run typecheck && npm test",
-    "claude:fast": "node scripts/claudia-claude.mjs --model claude-3-5-sonnet-latest",
-    "claude:glm": "node scripts/claudia-claude.mjs --model claude-3-5-sonnet-glm",
-    "claude:smoke": "node scripts/claudia-claude.mjs --model claude-3-haiku-latest"
+    "claude:fast": "node scripts/claudia-claude.mjs --model fast",
+    "claude:glm": "node scripts/claudia-claude.mjs --model glm",
+    "claude:smoke": "node scripts/claudia-claude.mjs --model smoke"
   },
   "keywords": [
     "anthropic",
