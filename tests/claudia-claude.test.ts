@@ -28,7 +28,7 @@ console.log(JSON.stringify({
   return directory;
 }
 
-test("wrapper launches Claude without a dummy token for managed-login users", () => {
+test("wrapper launches Claude with dummy auth by default", () => {
   const result = spawnSync(process.execPath, [wrapperPath], {
     encoding: "utf8",
     env: {
@@ -38,17 +38,16 @@ test("wrapper launches Claude without a dummy token for managed-login users", ()
   const output = JSON.parse(result.stdout) as Record<string, unknown>;
 
   assert.equal(result.status, 0);
-  // Non-interactive (no TTY in spawnSync): adds --model flag
   assert.deepEqual(output.args, ["--model", "claude-3-5-sonnet-latest"]);
   assert.equal(output.baseUrl, "http://localhost:8082");
   assert.equal(output.model, "claude-3-5-sonnet-latest");
-  assert.equal(output.authToken, undefined);
+  assert.equal(output.authToken, "dummy");
 });
 
-test("wrapper enables local dummy auth and keeps explicit model selection consistent", () => {
+test("wrapper can opt into managed auth and keeps explicit model selection consistent", () => {
   const result = spawnSync(
     process.execPath,
-    [wrapperPath, "--local-auth", "--model", "claude-3-5-sonnet-glm"],
+    [wrapperPath, "--managed-auth", "--model", "claude-3-5-sonnet-glm"],
     {
       encoding: "utf8",
       env: {
@@ -59,11 +58,9 @@ test("wrapper enables local dummy auth and keeps explicit model selection consis
   const output = JSON.parse(result.stdout) as Record<string, unknown>;
 
   assert.equal(result.status, 0);
-  // Non-interactive: model is preserved, -i not added
   assert.deepEqual(output.args, ["--model", "claude-3-5-sonnet-glm"]);
   assert.equal(output.model, "claude-3-5-sonnet-glm");
-  assert.equal(output.authToken, "dummy");
-  assert.match(result.stderr, /Claudia Router local auth enabled/);
+  assert.equal(output.authToken, undefined);
 });
 
 test("wrapper prints a helpful error when Claude Code is missing", () => {

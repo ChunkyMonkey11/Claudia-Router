@@ -31,11 +31,9 @@ export function buildClaudeEnv(userEnv, argsDefaultModel = undefined, args = [])
       userEnv.ANTHROPIC_DEFAULT_HAIKU_MODEL ?? "claude-3-haiku-latest"
   };
 
-  // Managed-login users should not receive a dummy token because Claude Code
-  // warns when managed credentials and ANTHROPIC_AUTH_TOKEN are both present.
   if (userEnv.ANTHROPIC_AUTH_TOKEN) {
     env.ANTHROPIC_AUTH_TOKEN = userEnv.ANTHROPIC_AUTH_TOKEN;
-  } else if (usesLocalAuth(args, userEnv)) {
+  } else if (!usesManagedAuth(args, userEnv)) {
     env.ANTHROPIC_AUTH_TOKEN = "dummy";
   }
 
@@ -46,13 +44,10 @@ export function buildClaudeEnv(userEnv, argsDefaultModel = undefined, args = [])
  * Build the Claude Code CLI arguments.
  * @param {string[]} args - The script arguments (from process.argv.slice(2))
  * @param {string} defaultModel - The default model to use if no --model flag is present
- * @param {Object} [options]
- * @param {boolean} [options.isTTY] - Whether stdin is a TTY (default: process.stdin.isTTY)
  * @returns {string[]} The arguments array for the claude command
  */
-export function buildClaudeArgs(args, defaultModel, options = {}) {
-  const { isTTY = process.stdin.isTTY } = options;
-  const claudeArgs = args.filter((arg) => arg !== "--local-auth");
+export function buildClaudeArgs(args, defaultModel) {
+  const claudeArgs = args.filter((arg) => arg !== "--local-auth" && arg !== "--managed-auth");
 
   // Handle 'models' command - pass through without adding default model
   if (claudeArgs.includes("models")) {
@@ -66,20 +61,7 @@ export function buildClaudeArgs(args, defaultModel, options = {}) {
     arg === "--model" || arg.startsWith("--model=") || expandedArgs[index - 1] === "--model"
   );
 
-  // For interactive terminal use (TTY): add -i flag and do NOT add a default model
-  // For non-interactive use: ensure a model is specified via flag or default
-  if (isTTY && !expandedArgs.includes("--print")) {
-    const result = [];
-    if (!expandedArgs.includes("-i")) {
-      result.push("-i");
-    }
-    result.push(...expandedArgs);
-    return result;
-  } else {
-    // Non-interactive or --print: add default model if not specified
-    const result = hasModelArg ? expandedArgs : ["--model", defaultModel, ...expandedArgs];
-    return result;
-  }
+  return hasModelArg ? expandedArgs : ["--model", defaultModel, ...expandedArgs];
 }
 
 export function resolveClaudeModel(args, defaultModel = "claude-3-5-sonnet-latest") {
@@ -134,6 +116,6 @@ function expandShortcuts(args) {
   return result;
 }
 
-function usesLocalAuth(args, userEnv) {
-  return args.includes("--local-auth") || userEnv.CLAUDIA_LOCAL_AUTH === "1";
+function usesManagedAuth(args, userEnv) {
+  return args.includes("--managed-auth") || userEnv.CLAUDIA_MANAGED_AUTH === "1";
 }

@@ -21,10 +21,6 @@ const claudeArgs = buildClaudeArgs(args, defaultModel);
 const resolvedModel = resolveClaudeModel(args, defaultModel);
 const env = buildClaudeEnv(process.env, defaultModel, args);
 
-if (env.ANTHROPIC_AUTH_TOKEN === "dummy" && !process.env.ANTHROPIC_AUTH_TOKEN) {
-  console.error("Claudia Router local auth enabled. Using a dummy token for the local router.");
-}
-
 const child = spawn("claude", claudeArgs, {
   stdio: "inherit",
   env
@@ -58,7 +54,9 @@ function printVerboseInfo(args, defaultModel) {
   console.log("================================");
   console.log(`Router URL:       ${env.ANTHROPIC_BASE_URL ?? "http://localhost:8082"}`);
   console.log(`Claude Model:     ${env.ANTHROPIC_MODEL ?? resolvedModel ?? defaultModel}`);
-  console.log(`Auth:             ${env.ANTHROPIC_AUTH_TOKEN ? "configured" : "managed login"}`);
+  console.log(
+    `Auth:             ${env.ANTHROPIC_AUTH_TOKEN === "dummy" ? "local auth (dummy token)" : "managed login"}`
+  );
 
   // Try to load config to show backend mapping
   try {
@@ -97,13 +95,14 @@ Shortcuts (use with --model or in npm scripts):
   --model qwen     Fallback: qwen/qwen3.5-122b-a10b (NVIDIA)
   --model smoke    Lightweight: nvidia/nemotron-mini-4b-instruct (NVIDIA)
 
-Built-in npm scripts:
+  Built-in npm scripts:
 
   npm run claude:fast   (uses --model fast)
   npm run claude:glm    (uses --model glm)
   npm run claude:smoke  (uses --model smoke)
 
-Any model name is also accepted via --model. Use --local-auth when not logged into Claude Code.
+By default the wrapper uses local auth so NVIDIA-only users can run it immediately.
+Use --managed-auth if you want Claude Code managed login instead.
 
 `);
 }

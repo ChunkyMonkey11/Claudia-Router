@@ -95,25 +95,25 @@ cd /path/to/your/project
 claudia-claude
 ```
 
-The wrapper runs the normal `claude` CLI with `ANTHROPIC_BASE_URL` pointed to the local router and the default router model already set. By default, it uses your existing Claude Code login (managed credentials). Pass normal Claude Code arguments as usual:
+The wrapper runs the normal `claude` CLI with `ANTHROPIC_BASE_URL` pointed to the local router and the default router model already set. By default, it uses local auth so NVIDIA-only users can run it immediately. Pass normal Claude Code arguments as usual:
 
 ```sh
 claudia-claude --model claude-3-5-sonnet-glm
 ```
 
-If you are not logged into Claude Code, enable local auth. This supplies a dummy token to the local router without requiring an Anthropic login:
+If you want Claude Code managed login instead, opt in explicitly:
 
 ```sh
-claudia-claude --local-auth
+claudia-claude --managed-auth
 ```
 
 From this repository, use:
 
 ```sh
-npm run claude:fast -- --local-auth
+npm run claude:fast -- --managed-auth
 ```
 
-If you see an authentication conflict warning, remove `--local-auth` when using a managed Claude Code login. Claude managed credentials are sent only to the local router; your NVIDIA key is sent to NVIDIA by the router.
+If you see a managed-login warning, remove `--managed-auth`. Claude managed credentials are sent only to the local router; your NVIDIA key is sent to NVIDIA by the router.
 
 The fast script and default wrapper route `claude-3-5-sonnet-latest` to NVIDIA `stepfun-ai/step-3.5-flash`. Use `npm run claude:glm` for the slower GLM quality profile, or `npm run claude:smoke` to test routing with the smallest configured model.
 
@@ -343,7 +343,7 @@ ANTHROPIC_DEFAULT_HAIKU_MODEL=claude-3-5-sonnet-latest \
 claude --model claude-3-5-sonnet-latest
 ```
 
-If you are not logged into Claude Code, add `ANTHROPIC_AUTH_TOKEN=dummy` for this local gateway test. Do not set it when using a managed Claude Code login because Claude Code will report an authentication conflict.
+If you want to force managed login here, add `ANTHROPIC_AUTH_TOKEN` and remove the wrapper's default local auth behavior.
 
 Then ask Claude Code to do a safe file operation:
 
@@ -405,5 +405,4 @@ Before tagging a release:
 - Simple web dashboard
 - Policy layer for blocking risky actions
 - Prompt redaction
-- Team config
 - Claude Code-specific compatibility tests

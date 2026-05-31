@@ -128,9 +128,9 @@ curl http://localhost:8082/health
 Expected response:
 ```json
 {
-  "status": "healthy",
-  "timestamp": "...",
-  "uptime_seconds": 1.23
+  "ok": true,
+  "name": "claudia-router",
+  "version": "0.1.0"
 }
 ```
 

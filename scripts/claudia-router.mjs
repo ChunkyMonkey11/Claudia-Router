@@ -2,6 +2,9 @@
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import fs from "node:fs";
+import { fileURLToPath } from "node:url";
+
+const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 
 const COMMANDS = {
   doctor: {
@@ -115,7 +118,7 @@ async function handleStatus() {
 
 function handleVersion() {
   try {
-    const pkgPath = path.join(path.dirname(import.meta.url), "..", "package.json");
+    const pkgPath = path.join(scriptDirectory, "..", "package.json");
     const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
     console.log(`Claudia Router v${pkg.version}`);
   } catch {
@@ -124,7 +127,7 @@ function handleVersion() {
 }
 
 function handleChild(command, script) {
-  const scriptPath = path.join(__dirname, script);
+  const scriptPath = path.join(scriptDirectory, script);
   const childArgs = process.argv.slice(3);
 
   const child = spawnSync("node", [scriptPath, ...childArgs], {
