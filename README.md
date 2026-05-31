@@ -363,6 +363,12 @@ Any provider with an OpenAI-compatible `/chat/completions` endpoint should work.
 
 Groq, DeepSeek, Ollama OpenAI-compatible mode, and similar providers can be added by creating another backend entry.
 
+## Provider-Specific Notes
+
+- `local`: no auth header is sent unless you explicitly set a local API key and backend that requires one.
+- `nvidia`: async `202` responses are polled via `/status/{requestId}` until completion.
+- `openrouter`: standard OpenAI-style JSON responses and error statuses are supported; transient `429/5xx` errors follow retry policy.
+
 ## Logging
 
 Claudia Router logs one line per request with request ID, backend, source model, target model, latency, and status.
