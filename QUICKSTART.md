@@ -22,13 +22,12 @@ git clone https://github.com/ChunkyMonkey11/Claudia-Router.git
 cd Claudia-Router
 npm install
 
-# 2. Run interactive setup wizard
-npm run config
+# 2. Run the one-command setup flow
+npm run init
 
-# 3. When prompted:
-#    - Select provider: 1 (NVIDIA NIM)
-#    - Enter your NVIDIA API key when prompted
-#    - Wizard will test connectivity automatically
+# 3. When prompted, enter your NVIDIA API key
+#    - The setup flow uses NVIDIA by default
+#    - It will test connectivity automatically
 
 # 4. Start the router
 npm run dev
@@ -51,7 +50,7 @@ git clone https://github.com/ChunkyMonkey11/Claudia-Router.git
 cd Claudia-Router
 npm install
 
-# 2. Run interactive setup wizard
+# 2. Run the interactive setup wizard
 npm run config
 
 # 3. When prompted:
@@ -83,7 +82,7 @@ npm install
 # For LM Studio: http://localhost:1234/v1
 # For Ollama: ollama serve (then configure baseUrl to http://localhost:11434/v1)
 
-# 3. Run interactive setup wizard
+# 3. Run the interactive setup wizard
 npm run config
 
 # 4. When prompted:

@@ -27,6 +27,7 @@
   },
   "homepage": "https://github.com/ChunkyMonkey11/Claudia-Router#readme",
   "scripts": {
+    "init": "node scripts/setup.mjs",
     "setup": "node scripts/setup.mjs",
     "config": "node scripts/claudia-config.mjs",
     "doctor": "node scripts/doctor.mjs",

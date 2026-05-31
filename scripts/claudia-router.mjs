@@ -7,6 +7,10 @@ import { fileURLToPath } from "node:url";
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 
 const COMMANDS = {
+  init: {
+    description: "Run the setup flow for NVIDIA endpoints",
+    script: "setup.mjs"
+  },
   doctor: {
     description: "Run system and configuration checks",
     script: "doctor.mjs"
@@ -28,6 +32,7 @@ const COMMANDS = {
 const USAGE = `Usage: claudia-router <command>
 
 Commands:
+  init       Run the setup flow for NVIDIA endpoints
   doctor     Run system and configuration checks
   status     Check if the router is running
   config     Run the interactive configuration wizard

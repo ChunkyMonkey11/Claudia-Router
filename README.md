@@ -29,16 +29,16 @@ Prerequisites:
 - Claude Code CLI installed as `claude`
 - NVIDIA API key with access to NVIDIA hosted endpoints
 
+Start here:
+
 ```sh
 git clone https://github.com/ChunkyMonkey11/Claudia-Router.git
 cd Claudia-Router
 npm install
-npm run setup
+npm run init
 ```
 
-`npm run setup` checks Node.js and Claude Code, creates `.env` and `config.json`, securely
-prompts for your NVIDIA API key when needed, and runs a real NVIDIA smoke request. It
-finishes by printing the exact command to start the router.
+`npm run init` is the easiest first-run path. It checks prerequisites, sets up the NVIDIA default config, prompts for your NVIDIA key if needed, runs a smoke test, and prints the command to start the router.
 
 Start the router:
 
@@ -132,6 +132,8 @@ LOG_LEVEL=info
 2. Keep `defaultBackend` set to `nvidia` in `config.json`.
 
 3. Use a mapped Claude-style model alias such as `claude-3-5-sonnet-latest`, or send any model name and Claudia Router will use the NVIDIA backend default model.
+
+If you want to switch providers later, run `npm run config`.
 
 ## Config Example
 
@@ -395,15 +397,11 @@ Before tagging a release:
 
 ## Limitations
 
-- Text-only
-- Streaming responses are buffered until the provider completes, then returned as Anthropic SSE events
-- No vision
-- No perfect Claude Code compatibility guarantee
-- Provider quality depends on selected model
+Claudia Router is text-only today. It buffers streaming responses until the provider finishes, then returns Anthropic-style SSE events. That is intentional for now, because it keeps NVIDIA, OpenRouter, and local backends predictable while the compatibility tests mature. Live token-by-token passthrough is still on the roadmap, but only after provider stream formats are normalized and covered by tests. Vision, prompt caching, and full Claude Code compatibility are not done yet.
 
 ## Roadmap
 
-- Token-by-token provider streaming passthrough
+- Token-by-token provider streaming passthrough, after provider stream formats are normalized and covered by tests
 - Broader Claude Code compatibility tests
 - Request replay logs
 - Cost estimation
