@@ -48,7 +48,7 @@ export async function runQuickstart(options = {}) {
   if (options.profileName) {
     lines.push("");
     lines.push("Applying profile...");
-    const profileResult = runProfile({
+    const profileResult = await runProfile({
       cwd: options.cwd,
       env: options.env,
       profileName: options.profileName
