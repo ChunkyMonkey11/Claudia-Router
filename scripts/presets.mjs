@@ -1,3 +1,5 @@
+import { INTERACTIVE_PROVIDER_CHOICES } from "./providers.mjs";
+
 export const PROFILE_PRESETS = {
   fast: {
     alias: "fast",
@@ -30,30 +32,6 @@ export const PROFILE_PRESETS = {
 };
 
 export const PROFILE_ORDER = ["fast", "glm", "qwen", "smoke"];
-
-export const INTERACTIVE_PROVIDER_CHOICES = [
-  {
-    key: "local",
-    kind: "provider",
-    providerKey: "local",
-    label: "local",
-    description: "Switch to the local provider"
-  },
-  {
-    key: "nvidia",
-    kind: "provider",
-    providerKey: "nvidia",
-    label: "nvidia",
-    description: "Reconfigure for NVIDIA"
-  },
-  {
-    key: "openrouter",
-    kind: "provider",
-    providerKey: "openrouter",
-    label: "openrouter",
-    description: "Reconfigure for OpenRouter"
-  }
-];
 
 const MODEL_TO_ALIAS = Object.fromEntries(
   Object.entries(PROFILE_PRESETS).map(([alias, preset]) => [preset.model, alias])

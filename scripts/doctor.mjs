@@ -4,6 +4,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import { parse } from "dotenv";
+import { getProviderApiKeyEnv } from "./providers.mjs";
 
 const MINIMUM_NODE_MAJOR = 18;
 const PLACEHOLDER_KEYS = new Set(["your_nvidia_key_here", "your_actual_key", "replace_me"]);
@@ -64,11 +65,7 @@ export function runDoctor(options = {}) {
     }
   }
 
-  const providerApiKeyEnv = providerKey === "openrouter"
-    ? "OPENROUTER_API_KEY"
-    : providerKey === "local"
-      ? "LOCAL_API_KEY"
-      : "NVIDIA_API_KEY";
+  const providerApiKeyEnv = getProviderApiKeyEnv(providerKey);
 
   const envValues = envExists ? parse(fs.readFileSync(envPath, "utf8")) : {};
   const apiKey = envValues[providerApiKeyEnv]?.trim();

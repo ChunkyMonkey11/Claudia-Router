@@ -4,36 +4,7 @@ import path from "node:path";
 import { createInterface } from "node:readline/promises";
 import { pathToFileURL } from "node:url";
 import { buildProfileModelProfiles } from "./presets.mjs";
-
-const PROVIDERS = {
-  nvidia: {
-    name: "NVIDIA NIM",
-    baseUrl: "https://integrate.api.nvidia.com/v1",
-    apiKeyEnv: "NVIDIA_API_KEY",
-    defaultModel: "stepfun-ai/step-3.5-flash",
-    smokeModel: "nvidia/nemotron-mini-4b-instruct",
-    requiresKey: true,
-    description: "Fast, high-quality models hosted by NVIDIA"
-  },
-  openrouter: {
-    name: "OpenRouter",
-    baseUrl: "https://openrouter.ai/api/v1",
-    apiKeyEnv: "OPENROUTER_API_KEY",
-    defaultModel: "qwen/qwen-2.5-coder-32b-instruct",
-    smokeModel: "qwen/qwen-2.5-coder-32b-instruct",
-    requiresKey: true,
-    description: "Access to many models through OpenRouter"
-  },
-  local: {
-    name: "Local (LM Studio/Ollama/etc)",
-    baseUrl: "http://localhost:1234/v1",
-    apiKeyEnv: "LOCAL_API_KEY",
-    defaultModel: "local-model",
-    smokeModel: "local-model",
-    requiresKey: false,
-    description: "Local models via OpenAI-compatible server"
-  }
-};
+import { PROVIDER_ORDER, PROVIDERS, providerName } from "./providers.mjs";
 
 export async function runConfigWizard(options = {}) {
   const cwd = options.cwd ?? process.cwd();
@@ -88,7 +59,7 @@ export async function runConfigWizard(options = {}) {
   generateConfig(configPath, providerKey, provider);
   log("OK Configuration files created");
 
-  if (!skipSmoke && (providerKey === "nvidia" || providerKey === "openrouter")) {
+  if (!skipSmoke && provider.requiresKey) {
     await testConnectivity({
       baseUrl: provider.baseUrl,
       apiKey,
@@ -109,11 +80,11 @@ export async function runConfigWizard(options = {}) {
 }
 
 async function promptProvider({ log, question, defaultProviderKey }) {
-  log(`Select your AI provider (default: ${PROVIDERS[defaultProviderKey].name}):\n`);
-  const keys = Object.keys(PROVIDERS);
+  log(`Select your AI provider (default: ${providerName(defaultProviderKey)}):\n`);
+  const keys = PROVIDER_ORDER;
   for (const [index, key] of keys.entries()) {
     const provider = PROVIDERS[key];
-    log(`  ${index + 1}. ${provider.name}`);
+    log(`  ${index + 1}. ${providerName(key)}`);
     log(`     ${provider.description}`);
     log(`     Base URL: ${provider.baseUrl}\n`);
   }
@@ -122,18 +93,18 @@ async function promptProvider({ log, question, defaultProviderKey }) {
     const defaultIndex = keys.indexOf(defaultProviderKey) + 1 || 1;
     const response = (await question(`(${keys.length > 0 ? `1-${keys.length}` : "1"}, default: ${defaultIndex}): `)).trim();
     if (response === "") {
-      log(`Selected: ${PROVIDERS[defaultProviderKey].name} (default)`);
+      log(`Selected: ${providerName(defaultProviderKey)} (default)`);
       return defaultProviderKey;
     }
 
     const index = Number.parseInt(response, 10) - 1;
     if (Number.isInteger(index) && index >= 0 && index < keys.length) {
       const selected = keys[index];
-      log(`Selected: ${PROVIDERS[selected].name}`);
+      log(`Selected: ${providerName(selected)}`);
       return selected;
     }
 
-    log("Invalid choice. Please enter a number 1-3.");
+    log(`Invalid choice. Please enter a number 1-${keys.length}.`);
   }
 }
 

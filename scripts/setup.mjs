@@ -6,6 +6,7 @@ import { createInterface } from "node:readline/promises";
 import { pathToFileURL } from "node:url";
 import { parse } from "dotenv";
 import { runConfigWizard } from "./claudia-config.mjs";
+import { getProvider, getProviderApiKeyEnv } from "./providers.mjs";
 
 const MINIMUM_NODE_MAJOR = 18;
 
@@ -19,21 +20,15 @@ Options:
   -h, --help                            Show this help message
 `;
 
-const PROVIDER_API_KEY_ENV = {
-  nvidia: "NVIDIA_API_KEY",
-  openrouter: "OPENROUTER_API_KEY",
-  local: "LOCAL_API_KEY"
-};
-
 export async function runSetup(options = {}) {
   const cwd = options.cwd ?? process.cwd();
   const nodeVersion = options.nodeVersion ?? process.versions.node;
   const commandExists = options.commandExists ?? defaultCommandExists;
   const env = options.env ?? process.env;
   const question = options.question ?? defaultQuestion;
-  const promptForSecret = options.promptForSecret ?? defaultPromptForSecret;
   const fetchImpl = options.fetchImpl ?? globalThis.fetch;
   const providerKey = options.providerKey ?? "nvidia";
+  const promptForSecret = options.promptForSecret ?? ((prompt) => defaultPromptForSecret(prompt, providerKey));
   const apiKeyEnvName = options.apiKeyEnvName;
   const skipConfirmation = options.skipConfirmation ?? false;
   const skipSmoke = options.skipSmoke ?? false;
@@ -87,7 +82,8 @@ export async function runSetup(options = {}) {
   }
 
   const completionLines = [];
-  if (!skipSmoke && (providerKey === "nvidia" || providerKey === "openrouter")) {
+  const providerRequiresKey = getProvider(providerKey)?.requiresKey ?? true;
+  if (!skipSmoke && providerRequiresKey) {
     completionLines.push(`OK   ${providerKey} smoke request completed`);
   }
   completionLines.push("");
@@ -170,10 +166,10 @@ function defaultCommandExists(command) {
   return spawnSync(command, ["--version"], { stdio: "ignore" }).status === 0;
 }
 
-async function defaultPromptForSecret(prompt) {
+async function defaultPromptForSecret(prompt, providerKey = "nvidia") {
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
     const providerMatch = /^Enter\s+([A-Z0-9_]+):/.exec(prompt);
-    const inferredEnv = providerMatch?.[1] ?? PROVIDER_API_KEY_ENV.nvidia;
+    const inferredEnv = providerMatch?.[1] ?? getProviderApiKeyEnv(providerKey);
     throw new Error(`${inferredEnv} is missing. Run \`npm run init\` in an interactive terminal.`);
   }
 
