@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { createInterface } from "node:readline/promises";
 import { pathToFileURL } from "node:url";
+import { buildProfileModelProfiles } from "./presets.mjs";
 
 const PROVIDERS = {
   nvidia: {
@@ -168,47 +169,6 @@ ${PROVIDERS[providerKey].apiKeyEnv}=${apiKey}
 }
 
 function generateConfig(configPath, providerKey, provider) {
-  const modelProfiles = {
-    "claude-3-5-sonnet-latest": {
-      backend: providerKey,
-      providerModel: provider.defaultModel,
-      retryAttempts: 3,
-      retryBaseDelayMs: 500,
-      notes: "Fast coding profile"
-    },
-    "claude-3-haiku-latest": {
-      backend: providerKey,
-      providerModel: provider.smokeModel,
-      retryAttempts: 1,
-      retryBaseDelayMs: 250,
-      notes: "Lightweight smoke test model"
-    }
-  };
-
-  if (providerKey === "nvidia") {
-    modelProfiles["claude-3-5-sonnet-glm"] = {
-      backend: providerKey,
-      providerModel: "z-ai/glm4.7",
-      retryAttempts: 3,
-      retryBaseDelayMs: 500,
-      extraBody: {
-        chat_template_kwargs: {
-          enable_thinking: true,
-          clear_thinking: false
-        }
-      },
-      notes: "Explicit GLM 4.7 profile for harder coding tasks"
-    };
-
-    modelProfiles["claude-3-5-sonnet-qwen"] = {
-      backend: providerKey,
-      providerModel: "qwen/qwen3.5-122b-a10b",
-      retryAttempts: 3,
-      retryBaseDelayMs: 500,
-      notes: "Qwen fallback NVIDIA coding profile"
-    };
-  }
-
   const config = {
     port: 8082,
     defaultBackend: providerKey,
@@ -219,7 +179,7 @@ function generateConfig(configPath, providerKey, provider) {
         defaultModel: provider.defaultModel
       }
     },
-    modelProfiles,
+    modelProfiles: buildProfileModelProfiles(providerKey, provider),
     modelMap: {}
   };
 

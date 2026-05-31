@@ -4,19 +4,15 @@ import path from "node:path";
 import { createInterface } from "node:readline/promises";
 import { pathToFileURL } from "node:url";
 import { runSetup } from "./setup.mjs";
-
-const PROFILE_ALIASES = {
-  fast: "claude-3-5-sonnet-latest",
-  glm: "claude-3-5-sonnet-glm",
-  qwen: "claude-3-5-sonnet-qwen",
-  smoke: "claude-3-haiku-latest"
-};
-
-const REVERSE_PROFILE_ALIASES = Object.fromEntries(
-  Object.entries(PROFILE_ALIASES).map(([alias, model]) => [model, alias])
-);
-
-const PROFILE_ORDER = ["fast", "glm", "qwen", "smoke"];
+import {
+  buildInteractiveChoices,
+  getAvailableProfileAliases,
+  getProfileAlias,
+  getProfileModel,
+  getProfileNextCommand,
+  renderChooserHelp,
+  renderChooserPrompt
+} from "./presets.mjs";
 
 const USAGE = `Usage: claudia-router profile [name|show|list|toggle]
 
@@ -66,17 +62,17 @@ export async function runProfile(options = {}) {
   if (profileName === "list") {
     return {
       exitCode: 0,
-      output: `${renderProfileList(envPath, env)}\n`
+      output: `${renderProfileList(cwd, envPath, env)}\n`
     };
   }
 
   if (profileName === "toggle") {
     const current = getCurrentProfile(envPath, env);
-    const nextProfile = current === "glm" ? "fast" : "glm";
+    const nextProfile = current === getProfileModel("glm") ? "fast" : "glm";
     return applyProfile(cwd, envPath, nextProfile);
   }
 
-  const model = PROFILE_ALIASES[profileName];
+  const model = getProfileModel(profileName);
   if (!model) {
     return {
       exitCode: 1,
@@ -89,7 +85,7 @@ export async function runProfile(options = {}) {
 
 function renderCurrentProfile(envPath, env) {
   const current = getCurrentProfile(envPath, env);
-  const alias = REVERSE_PROFILE_ALIASES[current];
+  const alias = getProfileAlias(current);
 
   if (!current) {
     return [
@@ -113,13 +109,13 @@ function renderCurrentProfile(envPath, env) {
   ].join("\n");
 }
 
-function renderProfileList(envPath, env) {
+function renderProfileList(cwd, envPath, env) {
   const current = getCurrentProfile(envPath, env);
   const lines = ["Available profiles:", ""];
 
-  for (const alias of PROFILE_ORDER) {
-    const marker = PROFILE_ALIASES[alias] === current ? "*" : " ";
-    lines.push(`${marker} ${alias} -> ${PROFILE_ALIASES[alias]}`);
+  for (const alias of getAvailableProfileAliases(readConfig(cwd))) {
+    const marker = getProfileModel(alias) === current ? "*" : " ";
+    lines.push(`${marker} ${alias} -> ${getProfileModel(alias)}`);
   }
 
   lines.push("");
@@ -135,7 +131,7 @@ async function runInteractiveProfileChooser(options) {
   const envPath = options.envPath ?? path.join(cwd, ".env");
   const question = options.question ?? defaultQuestion;
   const config = readConfig(cwd);
-  const choices = buildProfileChoices(config);
+  const choices = buildInteractiveChoices(config);
 
   const response = (await question(renderChooserPrompt(choices))).trim().toLowerCase();
   const selection = resolveChooserSelection(response, choices);
@@ -167,7 +163,7 @@ async function runInteractiveProfileChooser(options) {
 }
 
 function applyProfile(cwd, envPath, profileName, explicitModel) {
-  const model = explicitModel ?? PROFILE_ALIASES[profileName];
+  const model = explicitModel ?? getProfileModel(profileName);
   const envFile = fs.existsSync(envPath) ? fs.readFileSync(envPath, "utf8") : "";
   const updated = upsertEnvVar(envFile, "CLAUDIA_CLAUDE_MODEL", model);
   fs.writeFileSync(envPath, updated, { encoding: "utf8" });
@@ -180,89 +176,6 @@ function applyProfile(cwd, envPath, profileName, explicitModel) {
       `     Next: ${getNextStep(profileName, model)}`
     ].join("\n") + "\n"
   };
-}
-
-function buildProfileChoices(config) {
-  const hasNvidiaProfiles = Boolean(config?.modelProfiles?.["claude-3-5-sonnet-glm"]);
-
-  const choices = [
-    {
-      key: "fast",
-      kind: "profile",
-      profileName: "fast",
-      label: "fast",
-      description: "Default coding preset"
-    },
-    {
-      key: "smoke",
-      kind: "profile",
-      profileName: "smoke",
-      label: "smoke",
-      description: "Smallest smoke-test preset"
-    },
-    {
-      key: "local",
-      kind: "provider",
-      providerKey: "local",
-      label: "local",
-      description: "Switch to the local provider"
-    },
-    {
-      key: "nvidia",
-      kind: "provider",
-      providerKey: "nvidia",
-      label: "nvidia",
-      description: "Reconfigure for NVIDIA"
-    },
-    {
-      key: "openrouter",
-      kind: "provider",
-      providerKey: "openrouter",
-      label: "openrouter",
-      description: "Reconfigure for OpenRouter"
-    }
-  ];
-
-  if (hasNvidiaProfiles) {
-    choices.splice(1, 0,
-      {
-        key: "glm",
-        kind: "profile",
-        profileName: "glm",
-        label: "glm",
-        description: "Higher-quality GLM preset"
-      },
-      {
-        key: "qwen",
-        kind: "profile",
-        profileName: "qwen",
-        label: "qwen",
-        description: "Qwen fallback preset"
-      }
-    );
-  }
-
-  return choices;
-}
-
-function renderChooserPrompt(choices) {
-  const lines = ["Choose a preset:", ""];
-
-  choices.forEach((choice, index) => {
-    lines.push(`  ${index + 1}. ${choice.label} - ${choice.description}`);
-  });
-
-  lines.push("");
-  lines.push("Press Enter for fast, or type a number/name:");
-  return lines.join("\n");
-}
-
-function renderChooserHelp(choices) {
-  return [
-    "",
-    "Available presets:",
-    ...choices.map((choice) => `  ${choice.label} - ${choice.description}`)
-  ].join("\n");
 }
 
 function resolveChooserSelection(input, choices) {
@@ -310,15 +223,8 @@ function getCurrentProfile(envPath, env) {
 }
 
 function getNextStep(profileName, model) {
-  if (profileName === "fast" || profileName === "glm" || profileName === "smoke") {
-    return `run \`npm run claude:${profileName}\``;
-  }
-
-  if (profileName === "qwen") {
-    return "run `npm run claude:qwen`";
-  }
-
-  return `run \`claudia-claude --model ${model}\``;
+  const nextCommand = getProfileNextCommand(profileName);
+  return nextCommand ? `run \`${nextCommand}\`` : `run \`claudia-claude --model ${model}\``;
 }
 
 function parseEnvFile(content) {

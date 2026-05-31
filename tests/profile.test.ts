@@ -76,6 +76,7 @@ test("profile command sets the active fast profile in .env", async () => {
 
 test("profile list shows the available presets", async () => {
   const cwd = createProfileDirectory("CLAUDIA_CLAUDE_MODEL=claude-3-5-sonnet-glm\n");
+  writeNvidiaConfig(cwd);
   const result = await runProfile({
     cwd,
     profileName: "list"

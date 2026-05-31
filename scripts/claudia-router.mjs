@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
+import { getProfileAlias, getProfileNextCommand } from "./presets.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 
@@ -199,7 +200,7 @@ function buildConfigSummary(configJson, profileEnv) {
   const backend = backendName ? configJson.backends?.[backendName] : null;
   const providerModel =
     modelProfile?.providerModel ?? modelProfile?.model ?? legacyMap?.model ?? backend?.defaultModel ?? "";
-  const alias = resolveProfileAlias(activeModel);
+  const alias = getProfileAlias(activeModel);
 
   return {
     profileLabel: alias ? `${alias} (${activeModel})` : activeModel || "not set",
@@ -210,19 +211,8 @@ function buildConfigSummary(configJson, profileEnv) {
   };
 }
 
-function resolveProfileAlias(modelName) {
-  const aliases = {
-    "claude-3-5-sonnet-latest": "fast",
-    "claude-3-5-sonnet-glm": "glm",
-    "claude-3-5-sonnet-qwen": "qwen",
-    "claude-3-haiku-latest": "smoke"
-  };
-
-  return aliases[modelName] ?? "";
-}
-
 function getStatusNextAction(summary) {
-  const alias = summary.modelAlias ? resolveProfileAlias(summary.modelAlias) : "";
+  const alias = summary.modelAlias ? getProfileAlias(summary.modelAlias) : "";
 
   if (!summary.modelAlias) {
     return "run `npm run claude:fast`";
@@ -233,10 +223,10 @@ function getStatusNextAction(summary) {
   }
 
   if (alias === "qwen") {
-    return "run `npm run claude:qwen`";
+    return `run \`${getProfileNextCommand(alias)}\``;
   }
 
-  return `run \`npm run claude:${alias}\``;
+  return `run \`${getProfileNextCommand(alias)}\``;
 }
 
 function handleVersion() {
