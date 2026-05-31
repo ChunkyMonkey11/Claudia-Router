@@ -15,7 +15,7 @@ npm install
 NVIDIA default:
 
 ```sh
-npm run quickstart -- --profile glm
+npm run quickstart
 npm run claude:fast
 ```
 
@@ -124,14 +124,15 @@ claudia-claude --model local-model
 | `npm start` | Start the router (production build) |
 | `npm run quickstart` | One-command setup + doctor (add `-- --start` to auto-start router, `-- --profile glm` to switch profile) |
 | `npm run init` | First-run setup (default NVIDIA) |
-| `npm run profile` | Switch the active Claude profile (`fast`, `glm`, `qwen`, `smoke`, `toggle`, `list`, `show`) |
-| `npm run status` | Show router health plus active profile and routing summary |
+| `npm run profile` | Open the interactive preset chooser (or use `fast`, `glm`, `qwen`, `smoke`, `toggle`, `list`, `show`) |
+| `npm run status` | Show router health plus active profile, routing summary, and next action |
 | `npm run doctor` | Check prerequisites and configuration |
 | `npm run release:check` | Release gate: typecheck + tests + build + package smoke |
 | `npm run config` | Re-run the configuration wizard |
 | `claudia-claude` | Launch Claude Code connected to the router |
 | `npm run claude:fast` | Fast coding model (stepfun-ai/step-3.5-flash) |
 | `npm run claude:glm` | High-quality model with thinking (z-ai/glm4.7) |
+| `npm run claude:qwen` | Qwen coding model (qwen/qwen3.5-122b-a10b) |
 | `npm run claude:smoke` | Quick smoke test (nemotron-mini-4b) |
 
 ---
@@ -190,7 +191,11 @@ Make sure your router is running and `ANTHROPIC_BASE_URL` is set to `http://loca
 Run `npm run init -- --provider openrouter` or `npm run init -- --provider local`, or use `npm run config` for the interactive wizard.
 
 ### Need to switch local Claude profiles?
-Run `npm run profile -- fast`, `npm run profile -- glm`, or `npm run profile -- toggle`.
+Run `npm run profile` and choose a preset, or use `npm run profile -- fast`, `npm run profile -- glm`, `npm run profile -- qwen`, or `npm run profile -- toggle`.
+
+If you want to set a preset during onboarding, use `npm run quickstart -- --profile glm`.
+
+Press Enter at the chooser to keep the fast preset.
 
 Run `npm run profile -- list` to see all presets.
 

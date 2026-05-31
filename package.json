@@ -46,6 +46,7 @@
     "release:smoke": "node scripts/release-smoke.mjs",
     "claude:fast": "node scripts/claudia-claude.mjs --model fast",
     "claude:glm": "node scripts/claudia-claude.mjs --model glm",
+    "claude:qwen": "node scripts/claudia-claude.mjs --model qwen",
     "claude:smoke": "node scripts/claudia-claude.mjs --model smoke"
   },
   "keywords": [

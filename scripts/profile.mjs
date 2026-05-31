@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
+import { createInterface } from "node:readline/promises";
 import { pathToFileURL } from "node:url";
+import { runSetup } from "./setup.mjs";
 
 const PROFILE_ALIASES = {
   fast: "claude-3-5-sonnet-latest",
@@ -29,19 +31,36 @@ Commands:
 
 Options:
   -h, --help  Show this help message
+
+With no arguments, \`profile\` opens the interactive preset chooser in a terminal.
 `;
 
-export function runProfile(options = {}) {
+export async function runProfile(options = {}) {
   const cwd = options.cwd ?? process.cwd();
   const env = options.env ?? process.env;
   const profileName = options.profileName;
   const envPath = path.join(cwd, ".env");
 
-  if (!profileName || profileName === "show") {
+  if (!profileName) {
+    if (options.question) {
+      return await runInteractiveProfileChooser({ ...options, cwd, env, envPath });
+    }
+
     return {
       exitCode: 0,
       output: `${renderCurrentProfile(envPath, env)}\n`
     };
+  }
+
+  if (profileName === "show") {
+    return {
+      exitCode: 0,
+      output: `${renderCurrentProfile(envPath, env)}\n`
+    };
+  }
+
+  if (profileName === "choose") {
+    return await runInteractiveProfileChooser({ ...options, cwd, env, envPath });
   }
 
   if (profileName === "list") {
@@ -75,7 +94,7 @@ function renderCurrentProfile(envPath, env) {
   if (!current) {
     return [
       "Active profile: not set",
-      "Use `npm run profile -- fast` to choose a default local profile."
+      "Use `npm run profile` to choose a preset."
     ].join("\n");
   }
 
@@ -104,10 +123,47 @@ function renderProfileList(envPath, env) {
   }
 
   lines.push("");
-  lines.push("Use `npm run profile -- fast` or `npm run profile -- glm` to switch quickly.");
+  lines.push("Use `npm run profile` to open the chooser, or `npm run profile -- fast` / `glm` to switch quickly.");
   lines.push("Use `npm run profile -- toggle` to flip between fast and glm.");
 
   return lines.join("\n");
+}
+
+async function runInteractiveProfileChooser(options) {
+  const cwd = options.cwd ?? process.cwd();
+  const env = options.env ?? process.env;
+  const envPath = options.envPath ?? path.join(cwd, ".env");
+  const question = options.question ?? defaultQuestion;
+  const config = readConfig(cwd);
+  const choices = buildProfileChoices(config);
+
+  const response = (await question(renderChooserPrompt(choices))).trim().toLowerCase();
+  const selection = resolveChooserSelection(response, choices);
+
+  if (!selection) {
+    return {
+      exitCode: 1,
+      output: `FAIL Unsupported preset: ${response || "(empty)"}\n${renderChooserHelp(choices)}`
+    };
+  }
+
+  if (selection.kind === "profile") {
+    return applyProfile(cwd, envPath, selection.profileName);
+  }
+
+  return await runSetup({
+    cwd,
+    env,
+    providerKey: selection.providerKey,
+    skipConfirmation: true,
+    skipSmoke: true,
+    commandExists: options.commandExists,
+    nodeVersion: options.nodeVersion,
+    fetchImpl: options.fetchImpl,
+    question: options.question,
+    promptForSecret: options.promptForSecret,
+    apiKeyEnvName: options.apiKeyEnvName
+  });
 }
 
 function applyProfile(cwd, envPath, profileName, explicitModel) {
@@ -124,6 +180,105 @@ function applyProfile(cwd, envPath, profileName, explicitModel) {
       `     Next: ${getNextStep(profileName, model)}`
     ].join("\n") + "\n"
   };
+}
+
+function buildProfileChoices(config) {
+  const hasNvidiaProfiles = Boolean(config?.modelProfiles?.["claude-3-5-sonnet-glm"]);
+
+  const choices = [
+    {
+      key: "fast",
+      kind: "profile",
+      profileName: "fast",
+      label: "fast",
+      description: "Default coding preset"
+    },
+    {
+      key: "smoke",
+      kind: "profile",
+      profileName: "smoke",
+      label: "smoke",
+      description: "Smallest smoke-test preset"
+    },
+    {
+      key: "local",
+      kind: "provider",
+      providerKey: "local",
+      label: "local",
+      description: "Switch to the local provider"
+    },
+    {
+      key: "nvidia",
+      kind: "provider",
+      providerKey: "nvidia",
+      label: "nvidia",
+      description: "Reconfigure for NVIDIA"
+    },
+    {
+      key: "openrouter",
+      kind: "provider",
+      providerKey: "openrouter",
+      label: "openrouter",
+      description: "Reconfigure for OpenRouter"
+    }
+  ];
+
+  if (hasNvidiaProfiles) {
+    choices.splice(1, 0,
+      {
+        key: "glm",
+        kind: "profile",
+        profileName: "glm",
+        label: "glm",
+        description: "Higher-quality GLM preset"
+      },
+      {
+        key: "qwen",
+        kind: "profile",
+        profileName: "qwen",
+        label: "qwen",
+        description: "Qwen fallback preset"
+      }
+    );
+  }
+
+  return choices;
+}
+
+function renderChooserPrompt(choices) {
+  const lines = ["Choose a preset:", ""];
+
+  choices.forEach((choice, index) => {
+    lines.push(`  ${index + 1}. ${choice.label} - ${choice.description}`);
+  });
+
+  lines.push("");
+  lines.push("Press Enter for fast, or type a number/name:");
+  return lines.join("\n");
+}
+
+function renderChooserHelp(choices) {
+  return [
+    "",
+    "Available presets:",
+    ...choices.map((choice) => `  ${choice.label} - ${choice.description}`)
+  ].join("\n");
+}
+
+function resolveChooserSelection(input, choices) {
+  if (!input) {
+    return choices.find((choice) => choice.label === "fast") ?? null;
+  }
+
+  const byName = choices.find((choice) => choice.label === input);
+  if (byName) return byName;
+
+  const numeric = Number.parseInt(input, 10);
+  if (Number.isInteger(numeric) && numeric >= 1 && numeric <= choices.length) {
+    return choices[numeric - 1];
+  }
+
+  return null;
 }
 
 function upsertEnvVar(content, key, value) {
@@ -160,7 +315,7 @@ function getNextStep(profileName, model) {
   }
 
   if (profileName === "qwen") {
-    return `run \`claudia-claude --model ${model}\``;
+    return "run `npm run claude:qwen`";
   }
 
   return `run \`claudia-claude --model ${model}\``;
@@ -200,6 +355,32 @@ function parseArgs(argv) {
   return { help: false, options };
 }
 
+function readConfig(cwd) {
+  const configPath = path.join(cwd, "config.json");
+  try {
+    if (!fs.existsSync(configPath)) {
+      return null;
+    }
+
+    return JSON.parse(fs.readFileSync(configPath, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+async function defaultQuestion(prompt) {
+  const readline = createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  try {
+    return await readline.question(prompt);
+  } finally {
+    readline.close();
+  }
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     const { help, options } = parseArgs(process.argv.slice(2));
@@ -207,7 +388,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       process.stdout.write(`${USAGE}\n`);
       process.exitCode = 0;
     } else {
-      const result = runProfile(options);
+      const result = await runProfile({ ...options, question: defaultQuestion });
       process.stdout.write(result.output);
       process.exitCode = result.exitCode;
     }

@@ -43,7 +43,7 @@ Default first-run path:
 npm run quickstart
 ```
 
-`quickstart` runs setup and doctor in one command. Add `-- --start` to start the router immediately after checks pass. Add `-- --profile glm` to switch the active Claude profile during onboarding.
+`quickstart` runs setup and doctor in one command. Add `-- --start` to start the router immediately after checks pass.
 
 For example:
 
@@ -72,6 +72,14 @@ If you want the router and wrapper status in one place, use:
 ```sh
 npm run status
 ```
+
+If you want to switch presets without editing `.env`, run:
+
+```sh
+npm run profile
+```
+
+Press Enter to keep the fast preset.
 
 If setup fails, run:
 
@@ -154,7 +162,7 @@ npm run claude:fast -- --managed-auth
 
 If you see a managed-login warning, remove `--managed-auth`. Claude managed credentials are sent only to the local router; your NVIDIA key is sent to NVIDIA by the router.
 
-The fast script and default wrapper route `claude-3-5-sonnet-latest` to NVIDIA `stepfun-ai/step-3.5-flash`. Use `npm run claude:glm` for the slower GLM quality profile, or `npm run claude:smoke` to test routing with the smallest configured model.
+The fast script and default wrapper route `claude-3-5-sonnet-latest` to NVIDIA `stepfun-ai/step-3.5-flash`. Use `npm run claude:glm` for the slower GLM quality profile, `npm run claude:qwen` for the Qwen fallback, or `npm run claude:smoke` to test routing with the smallest configured model.
 
 ## NVIDIA Setup
 
@@ -174,9 +182,9 @@ LOG_LEVEL=info
 
 If you want to switch providers later, use `npm run init -- --provider openrouter` or `npm run init -- --provider local`. Use `npm run config` if you prefer the interactive provider picker.
 
-If you want to switch local Claude profiles without editing `.env`, use `npm run profile -- fast`, `npm run profile -- glm`, `npm run profile -- list`, or `npm run profile -- toggle`.
+If you want to switch local Claude profiles without editing `.env`, run `npm run profile` and choose a preset, or use `npm run profile -- fast`, `npm run profile -- glm`, `npm run profile -- qwen`, `npm run profile -- list`, or `npm run profile -- toggle`.
 
-Use `npm run profile -- show` to see the current active profile.
+Use `npm run profile -- show` to see the current active profile. Use `npm run status` to see the active profile plus the next command to run.
 
 ## Automation
 

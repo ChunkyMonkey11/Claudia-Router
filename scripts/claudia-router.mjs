@@ -125,6 +125,7 @@ async function handleStatus() {
   if (!portListening) {
     console.log(`✗ Router is NOT running on port ${port}`);
     console.log(`  To start it, run: npm run dev`);
+    console.log(`Next: run \`npm run dev\``);
     process.exit(1);
     return;
   }
@@ -144,6 +145,7 @@ async function handleStatus() {
       if (data.uptime_seconds) {
         console.log(`  Uptime: ${data.uptime_seconds.toFixed(1)}s`);
       }
+      console.log(`Next: ${getStatusNextAction(configSummary)}`);
       process.exit(0);
       return;
     }
@@ -152,6 +154,7 @@ async function handleStatus() {
   }
 
   console.log(`✓ Router is running on port ${port} (port is listening)`);
+  console.log(`Next: ${getStatusNextAction(configSummary)}`);
   process.exit(0);
 }
 
@@ -216,6 +219,24 @@ function resolveProfileAlias(modelName) {
   };
 
   return aliases[modelName] ?? "";
+}
+
+function getStatusNextAction(summary) {
+  const alias = summary.modelAlias ? resolveProfileAlias(summary.modelAlias) : "";
+
+  if (!summary.modelAlias) {
+    return "run `npm run claude:fast`";
+  }
+
+  if (!alias) {
+    return "run `npm run profile` to choose a preset";
+  }
+
+  if (alias === "qwen") {
+    return "run `npm run claude:qwen`";
+  }
+
+  return `run \`npm run claude:${alias}\``;
 }
 
 function handleVersion() {

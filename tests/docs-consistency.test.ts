@@ -26,6 +26,7 @@ test("README and QUICKSTART keep first-run setup paths aligned", () => {
     "npm run init -- --provider local",
     "npm run init -- --provider openrouter",
     "npm run doctor",
+    "npm run claude:qwen",
     "npm run release:check"
   ];
 

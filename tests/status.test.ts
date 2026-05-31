@@ -91,6 +91,7 @@ test("router status prints the active profile and routing summary", async () => 
     assert.match(result.stdout, /Provider model: z-ai\/glm4\.7/);
     assert.match(result.stdout, /Router port: 3099/);
     assert.match(result.stdout, /✓ Router is running on port 3099/);
+    assert.match(result.stdout, /Next: run `npm run claude:glm`/);
   } finally {
     await new Promise<void>((resolve) => {
       server.close(() => resolve());

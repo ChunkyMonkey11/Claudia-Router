@@ -4,34 +4,6 @@ import path from "node:path";
 import { createInterface } from "node:readline/promises";
 import { pathToFileURL } from "node:url";
 
-const CONFIG_TEMPLATE = `{
-  "port": 8082,
-  "defaultBackend": "PROVIDER",
-  "backends": {
-    "PROVIDER": {
-      "baseUrl": "BASE_URL",
-      "apiKeyEnv": "API_KEY_ENV",
-      "defaultModel": "DEFAULT_MODEL"
-    }
-  },
-  "modelProfiles": {
-    "claude-3-5-sonnet-latest": {
-      "backend": "PROVIDER",
-      "providerModel": "DEFAULT_MODEL",
-      "retryAttempts": 3,
-      "retryBaseDelayMs": 500,
-      "notes": "Fast coding profile"
-    },
-    "claude-3-haiku-latest": {
-      "backend": "PROVIDER",
-      "providerModel": "SMOKE_MODEL",
-      "retryAttempts": 1,
-      "retryBaseDelayMs": 250,
-      "notes": "Lightweight smoke test model"
-    }
-  }
-}`;
-
 const PROVIDERS = {
   nvidia: {
     name: "NVIDIA NIM",
@@ -196,13 +168,62 @@ ${PROVIDERS[providerKey].apiKeyEnv}=${apiKey}
 }
 
 function generateConfig(configPath, providerKey, provider) {
-  const config = CONFIG_TEMPLATE
-    .replace(/PROVIDER/g, providerKey)
-    .replace(/BASE_URL/g, provider.baseUrl)
-    .replace(/API_KEY_ENV/g, provider.apiKeyEnv)
-    .replace(/DEFAULT_MODEL/g, provider.defaultModel)
-    .replace(/SMOKE_MODEL/g, provider.smokeModel);
-  fs.writeFileSync(configPath, config, "utf8");
+  const modelProfiles = {
+    "claude-3-5-sonnet-latest": {
+      backend: providerKey,
+      providerModel: provider.defaultModel,
+      retryAttempts: 3,
+      retryBaseDelayMs: 500,
+      notes: "Fast coding profile"
+    },
+    "claude-3-haiku-latest": {
+      backend: providerKey,
+      providerModel: provider.smokeModel,
+      retryAttempts: 1,
+      retryBaseDelayMs: 250,
+      notes: "Lightweight smoke test model"
+    }
+  };
+
+  if (providerKey === "nvidia") {
+    modelProfiles["claude-3-5-sonnet-glm"] = {
+      backend: providerKey,
+      providerModel: "z-ai/glm4.7",
+      retryAttempts: 3,
+      retryBaseDelayMs: 500,
+      extraBody: {
+        chat_template_kwargs: {
+          enable_thinking: true,
+          clear_thinking: false
+        }
+      },
+      notes: "Explicit GLM 4.7 profile for harder coding tasks"
+    };
+
+    modelProfiles["claude-3-5-sonnet-qwen"] = {
+      backend: providerKey,
+      providerModel: "qwen/qwen3.5-122b-a10b",
+      retryAttempts: 3,
+      retryBaseDelayMs: 500,
+      notes: "Qwen fallback NVIDIA coding profile"
+    };
+  }
+
+  const config = {
+    port: 8082,
+    defaultBackend: providerKey,
+    backends: {
+      [providerKey]: {
+        baseUrl: provider.baseUrl,
+        apiKeyEnv: provider.apiKeyEnv,
+        defaultModel: provider.defaultModel
+      }
+    },
+    modelProfiles,
+    modelMap: {}
+  };
+
+  fs.writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
 }
 
 async function testConnectivity({ baseUrl, apiKey, model, providerName, fetchImpl, log }) {
