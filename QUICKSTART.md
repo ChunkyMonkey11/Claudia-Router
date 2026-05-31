@@ -15,8 +15,7 @@ npm install
 NVIDIA default:
 
 ```sh
-npm run init
-npm run dev
+npm run quickstart
 npm run claude:fast
 ```
 
@@ -123,6 +122,7 @@ claudia-claude --model local-model
 |---------|-------------|
 | `npm run dev` | Start the router (development mode with logging) |
 | `npm start` | Start the router (production build) |
+| `npm run quickstart` | One-command setup + doctor (add `-- --start` to auto-start router) |
 | `npm run init` | First-run setup (default NVIDIA) |
 | `npm run doctor` | Check prerequisites and configuration |
 | `npm run release:check` | Release gate: typecheck + tests + build + package smoke |

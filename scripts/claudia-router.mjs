@@ -11,6 +11,10 @@ const COMMANDS = {
     description: "Run the setup flow for supported providers",
     script: "setup.mjs"
   },
+  quickstart: {
+    description: "Run setup + doctor in one command",
+    script: "quickstart.mjs"
+  },
   doctor: {
     description: "Run system and configuration checks",
     script: "doctor.mjs"
@@ -33,6 +37,7 @@ const USAGE = `Usage: claudia-router <command>
 
 Commands:
   init       Run the setup flow for supported providers
+  quickstart Run setup + doctor in one command
   doctor     Run system and configuration checks
   status     Check if the router is running
   config     Run the interactive configuration wizard

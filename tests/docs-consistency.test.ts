@@ -15,6 +15,7 @@ test("README and QUICKSTART keep first-run setup paths aligned", () => {
   const quickstart = read("QUICKSTART.md");
 
   const requiredCommands = [
+    "npm run quickstart",
     "npm run init",
     "npm run init -- --provider local",
     "npm run init -- --provider openrouter",

@@ -37,7 +37,15 @@ cd Claudia-Router
 npm install
 ```
 
-Choose one setup path:
+Default first-run path:
+
+```sh
+npm run quickstart
+```
+
+`quickstart` runs setup and doctor in one command. Add `-- --start` to start the router immediately after checks pass.
+
+Alternative setup paths:
 
 1. NVIDIA default path (recommended quality):
 
@@ -51,7 +59,7 @@ npm run init
 npm run init -- --provider local
 ```
 
-`npm run init` is the main first-run entrypoint for every provider. It checks prerequisites, writes `.env` and `config.json`, and prints next steps. Remote providers prompt for keys; local uses a dummy key by default.
+`npm run init` remains the underlying setup entrypoint for every provider. It checks prerequisites, writes `.env` and `config.json`, and prints next steps. Remote providers prompt for keys; local uses a dummy key by default.
 
 If setup fails, run:
 
