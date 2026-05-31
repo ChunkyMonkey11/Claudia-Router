@@ -23,13 +23,9 @@ It is useful for experimenting with Claude-style coding workflows while using ba
 
 ## Quick Start
 
-Prerequisites:
+If you want the shortest path, use the default NVIDIA flow:
 
-- Node.js 18 or newer
-- Claude Code CLI installed as `claude`
-- API key only for remote providers (NVIDIA/OpenRouter). Local provider works with a dummy key.
-
-Install:
+1. Clone and install:
 
 ```sh
 git clone https://github.com/ChunkyMonkey11/Claudia-Router.git
@@ -37,67 +33,49 @@ cd Claudia-Router
 npm install
 ```
 
-Default first-run path:
+2. Run the first-time setup:
 
 ```sh
 npm run quickstart
 ```
 
-`quickstart` runs setup and doctor in one command. Add `-- --start` to start the router immediately after checks pass.
-
-For example:
+3. Start the router:
 
 ```sh
-npm run quickstart -- --profile glm
+npm run dev
 ```
 
-Alternative setup paths:
-
-1. NVIDIA default path (recommended quality):
+4. Use Claude:
 
 ```sh
-npm run init
+npm run claude:fast
 ```
 
-2. Local no-key path:
+If setup fails:
 
 ```sh
-npm run init -- --provider local
+npm run doctor
 ```
 
-`npm run init` remains the underlying setup entrypoint for every provider. It checks prerequisites, writes `.env` and `config.json`, and prints next steps. Remote providers prompt for keys; local uses a dummy key by default.
+That is the main flow. `quickstart` runs setup and doctor in one command. Add `-- --start` if you want it to start the router automatically after setup.
 
-If you want the router and wrapper status in one place, use:
+If you want a different profile during onboarding, you can still pass `-- --profile glm`, but that is optional.
+
+If you want to set a preset during onboarding, use `npm run quickstart -- --profile glm`.
+
+If you need the current router state in one place:
 
 ```sh
 npm run status
 ```
 
-If you want to switch presets without editing `.env`, run:
+If you want to switch presets without editing `.env`:
 
 ```sh
 npm run profile
 ```
 
 Press Enter to keep the fast preset.
-
-If setup fails, run:
-
-```sh
-npm run doctor
-```
-
-Start the router:
-
-```sh
-npm run dev
-```
-
-Run prerequisite checks again at any time:
-
-```sh
-npm run doctor
-```
 
 Optional: install the Claude wrapper command locally:
 

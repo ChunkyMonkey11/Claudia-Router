@@ -88,7 +88,7 @@ export async function runQuickstart(options = {}) {
   }
 
   lines.push("Quickstart complete.");
-  lines.push("Next: run `npm run dev` and then `npm run claude:fast` (or use another profile).");
+  lines.push("Next: run `npm run dev` and then `npm run claude:fast`.");
 
   return {
     exitCode: 0,

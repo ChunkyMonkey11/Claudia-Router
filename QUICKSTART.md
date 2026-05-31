@@ -1,8 +1,8 @@
 # Claudia Router Quick Start
 
-Get up and running in 2 minutes with your preferred AI provider.
+Use the default NVIDIA flow first.
 
-## Fastest Paths
+## One Path
 
 Clone once:
 
@@ -12,26 +12,23 @@ cd Claudia-Router
 npm install
 ```
 
-NVIDIA default:
+Then run:
 
 ```sh
 npm run quickstart
+npm run dev
 npm run claude:fast
 ```
 
-Local no-key:
-
-```sh
-npm run init -- --provider local
-npm run dev
-claudia-claude --model local-model
-```
-
-If setup fails, run:
+If setup fails:
 
 ```sh
 npm run doctor
 ```
+
+`npm run quickstart` is the main setup path. Add `-- --start` if you want it to launch the router automatically after setup.
+
+If you want a different profile during setup, you can pass `-- --profile glm`, but that is optional.
 
 ---
 
@@ -43,7 +40,7 @@ npm run doctor
 
 ---
 
-## Option 1: NVIDIA NIM (Recommended for Quality)
+## Advanced: NVIDIA NIM (Recommended for Quality)
 
 NVIDIA hosted models like `stepfun-ai/step-3.5-flash` and `z-ai/glm4.7`.
 From the cloned repo root:
@@ -67,7 +64,7 @@ npm run claude:fast
 
 ---
 
-## Option 2: OpenRouter (Many Models)
+## Advanced: OpenRouter (Many Models)
 
 Access to many models (Qwen, Claude, Llama, etc.) via OpenRouter.
 From the cloned repo root:
@@ -89,7 +86,7 @@ claudia-claude --model claude-3-5-sonnet-latest
 
 ---
 
-## Option 3: Local Models (LM Studio / Ollama)
+## Advanced: Local Models (LM Studio / Ollama)
 
 Use models running on your own machine.
 From the cloned repo root:
