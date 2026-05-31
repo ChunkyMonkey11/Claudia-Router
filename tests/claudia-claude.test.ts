@@ -38,6 +38,7 @@ test("wrapper launches Claude without a dummy token for managed-login users", ()
   const output = JSON.parse(result.stdout) as Record<string, unknown>;
 
   assert.equal(result.status, 0);
+  // Non-interactive (no TTY in spawnSync): adds --model flag
   assert.deepEqual(output.args, ["--model", "claude-3-5-sonnet-latest"]);
   assert.equal(output.baseUrl, "http://localhost:8082");
   assert.equal(output.model, "claude-3-5-sonnet-latest");
@@ -58,6 +59,7 @@ test("wrapper enables local dummy auth and keeps explicit model selection consis
   const output = JSON.parse(result.stdout) as Record<string, unknown>;
 
   assert.equal(result.status, 0);
+  // Non-interactive: model is preserved, -i not added
   assert.deepEqual(output.args, ["--model", "claude-3-5-sonnet-glm"]);
   assert.equal(output.model, "claude-3-5-sonnet-glm");
   assert.equal(output.authToken, "dummy");

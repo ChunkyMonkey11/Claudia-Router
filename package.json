@@ -5,7 +5,9 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "claudia-claude": "scripts/claudia-claude.mjs"
+    "claudia-claude": "scripts/claudia-claude.mjs",
+    "claudia-config": "scripts/claudia-config.mjs",
+    "claudia-router": "scripts/claudia-router.mjs"
   },
   "files": [
     ".env.example",
@@ -26,6 +28,7 @@
   "homepage": "https://github.com/ChunkyMonkey11/Claudia-Router#readme",
   "scripts": {
     "setup": "node scripts/setup.mjs",
+    "config": "node scripts/claudia-config.mjs",
     "doctor": "node scripts/doctor.mjs",
     "dev": "tsx src/index.ts",
     "build": "tsc",

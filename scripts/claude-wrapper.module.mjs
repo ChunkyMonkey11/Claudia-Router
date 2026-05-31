@@ -46,9 +46,12 @@ export function buildClaudeEnv(userEnv, argsDefaultModel = undefined, args = [])
  * Build the Claude Code CLI arguments.
  * @param {string[]} args - The script arguments (from process.argv.slice(2))
  * @param {string} defaultModel - The default model to use if no --model flag is present
+ * @param {Object} [options]
+ * @param {boolean} [options.isTTY] - Whether stdin is a TTY (default: process.stdin.isTTY)
  * @returns {string[]} The arguments array for the claude command
  */
-export function buildClaudeArgs(args, defaultModel) {
+export function buildClaudeArgs(args, defaultModel, options = {}) {
+  const { isTTY = process.stdin.isTTY } = options;
   const claudeArgs = args.filter((arg) => arg !== "--local-auth");
 
   // Handle 'models' command - pass through without adding default model
@@ -62,7 +65,21 @@ export function buildClaudeArgs(args, defaultModel) {
   const hasModelArg = expandedArgs.some((arg, index) =>
     arg === "--model" || arg.startsWith("--model=") || expandedArgs[index - 1] === "--model"
   );
-  return hasModelArg ? expandedArgs : ["--model", defaultModel, ...expandedArgs];
+
+  // For interactive terminal use (TTY): add -i flag and do NOT add a default model
+  // For non-interactive use: ensure a model is specified via flag or default
+  if (isTTY && !expandedArgs.includes("--print")) {
+    const result = [];
+    if (!expandedArgs.includes("-i")) {
+      result.push("-i");
+    }
+    result.push(...expandedArgs);
+    return result;
+  } else {
+    // Non-interactive or --print: add default model if not specified
+    const result = hasModelArg ? expandedArgs : ["--model", defaultModel, ...expandedArgs];
+    return result;
+  }
 }
 
 export function resolveClaudeModel(args, defaultModel = "claude-3-5-sonnet-latest") {

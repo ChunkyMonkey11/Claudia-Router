@@ -86,47 +86,48 @@ test("buildClaudeEnv: preserves other user env vars", () => {
   assert.equal(env.OTHER_VAR, "value");
 });
 
-test("buildClaudeArgs: adds default model when no --model flag", () => {
-  const args = buildClaudeArgs([], "claude-3-5-sonnet-latest");
+test("buildClaudeArgs: returns [-i] for interactive mode with no args", () => {
+  const args = buildClaudeArgs([], "claude-3-5-sonnet-latest", { isTTY: true });
 
-  assert.deepEqual(args, ["--model", "claude-3-5-sonnet-latest"]);
+  // Interactive mode: -i flag, no --model
+  assert.deepEqual(args, ["-i"]);
 });
 
 test("buildClaudeArgs: adds default model with other args", () => {
-  const args = buildClaudeArgs(["--verbose", "project/"], "claude-opus-4");
+  const args = buildClaudeArgs(["--verbose", "project/"], "claude-opus-4", { isTTY: false });
 
   assert.deepEqual(args, ["--model", "claude-opus-4", "--verbose", "project/"]);
 });
 
 test("buildClaudeArgs: respects explicit --model as separate flag", () => {
-  const args = buildClaudeArgs(["--model", "custom-model"], "default-model");
+  const args = buildClaudeArgs(["--model", "custom-model"], "default-model", { isTTY: false });
 
   assert.deepEqual(args, ["--model", "custom-model"]);
 });
 
 test("buildClaudeArgs: respects explicit --model=combined flag", () => {
-  const args = buildClaudeArgs(["--model=custom-model", "--yes"], "default-model");
+  const args = buildClaudeArgs(["--model=custom-model", "--yes"], "default-model", { isTTY: false });
 
   assert.deepEqual(args, ["--model=custom-model", "--yes"]);
 });
 
 test("buildClaudeArgs: detects --model in any position", () => {
-  const args1 = buildClaudeArgs(["--verbose", "--model", "custom"], "default");
+  const args1 = buildClaudeArgs(["--verbose", "--model", "custom"], "default", { isTTY: false });
   assert.deepEqual(args1, ["--verbose", "--model", "custom"]);
 
-  const args2 = buildClaudeArgs(["--model=custom", "--verbose"], "default");
+  const args2 = buildClaudeArgs(["--model=custom", "--verbose"], "default", { isTTY: false });
   assert.deepEqual(args2, ["--model=custom", "--verbose"]);
 });
 
 test("buildClaudeArgs: doesn't duplicate --model if already present", () => {
-  const args = buildClaudeArgs(["--model=custom", "dir"], "default-model");
+  const args = buildClaudeArgs(["--model=custom", "dir"], "default-model", { isTTY: false });
 
   assert.equal(args[0], "--model=custom");
   assert.equal(args.slice(1).includes("--model"), false);
 });
 
 test("buildClaudeArgs: removes wrapper-only --local-auth flag", () => {
-  const args = buildClaudeArgs(["--local-auth", "--verbose"], "default-model");
+  const args = buildClaudeArgs(["--local-auth", "--verbose"], "default-model", { isTTY: false });
 
   assert.deepEqual(args, ["--model", "default-model", "--verbose"]);
 });

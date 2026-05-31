@@ -1,14 +1,20 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
+import path from "node:path";
 import { buildClaudeEnv, buildClaudeArgs, resolveClaudeModel } from "./claude-wrapper.module.mjs";
 
 const args = process.argv.slice(2);
 const defaultModel = process.env.CLAUDIA_CLAUDE_MODEL ?? "claude-3-5-sonnet-latest";
 
-// Handle 'models' command specially
+// Handle special commands
 if (args.includes("models")) {
   printModels();
   process.exit(0);
+}
+
+if (args.includes("--verbose") || args.includes("-v")) {
+  printVerboseInfo(args, defaultModel);
 }
 
 const claudeArgs = buildClaudeArgs(args, defaultModel);
@@ -42,6 +48,42 @@ child.on("error", (error) => {
 
   process.exit(1);
 });
+
+function printVerboseInfo(args, defaultModel) {
+  const claudeArgs = buildClaudeArgs(args, defaultModel);
+  const resolvedModel = resolveClaudeModel(args, defaultModel);
+  const env = buildClaudeEnv(process.env, defaultModel, args);
+
+  console.log("\n🔧 Claudia Router Configuration");
+  console.log("================================");
+  console.log(`Router URL:       ${env.ANTHROPIC_BASE_URL ?? "http://localhost:8082"}`);
+  console.log(`Claude Model:     ${env.ANTHROPIC_MODEL ?? resolvedModel ?? defaultModel}`);
+  console.log(`Auth:             ${env.ANTHROPIC_AUTH_TOKEN ? "configured" : "managed login"}`);
+
+  // Try to load config to show backend mapping
+  try {
+    const configPath = process.env.CLAUDIA_CONFIG ?? path.resolve(process.cwd(), "config.json");
+    if (existsSync(configPath)) {
+      const configJson = JSON.parse(require("fs").readFileSync(configPath, "utf8"));
+      const profile = configJson.modelProfiles?.[env.ANTHROPIC_MODEL] ||
+                     configJson.modelMap?.[env.ANTHROPIC_MODEL];
+      if (profile) {
+        const backend = configJson.backends[profile.backend];
+        console.log(`\n📡 Backend Routing`);
+        console.log(`Backend:          ${profile.backend}`);
+        console.log(`Provider Model:   ${profile.providerModel || profile.model}`);
+        console.log(`Base URL:         ${backend?.baseUrl}`);
+        if (profile.retryAttempts !== undefined) {
+          console.log(`Retries:          ${profile.retryAttempts}`);
+        }
+      }
+    }
+  } catch (error) {
+    // Silently ignore config loading errors in verbose mode
+  }
+
+  console.log("\n🚀 Starting Claude Code...\n");
+}
 
 function printModels() {
   console.log(`
