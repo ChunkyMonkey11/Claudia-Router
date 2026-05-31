@@ -1,23 +1,38 @@
 #!/usr/bin/env node
 import fs from "node:fs";
-import path from "node:path";
 import { spawnSync } from "node:child_process";
+import path from "node:path";
+import { createInterface } from "node:readline/promises";
 import { pathToFileURL } from "node:url";
 import { parse } from "dotenv";
+import { runConfigWizard } from "./claudia-config.mjs";
 
 const MINIMUM_NODE_MAJOR = 18;
-const SMOKE_BACKEND = "nvidia";
-const SMOKE_BASE_URL = "https://integrate.api.nvidia.com/v1";
-const SMOKE_MODEL = "nvidia/nemotron-mini-4b-instruct";
-const PLACEHOLDER_KEYS = new Set(["your_nvidia_key_here", "your_actual_key", "replace_me"]);
+
+const USAGE = `Usage: claudia-router init [options]
+
+Options:
+  --provider <nvidia|openrouter|local>  Override the default NVIDIA setup
+  --api-key-env <ENV_NAME>              Read the provider key from an existing environment variable
+  --yes                                 Skip confirmation prompts
+  --skip-smoke                          Skip the provider smoke test
+  -h, --help                            Show this help message
+`;
 
 export async function runSetup(options = {}) {
   const cwd = options.cwd ?? process.cwd();
   const nodeVersion = options.nodeVersion ?? process.versions.node;
   const commandExists = options.commandExists ?? defaultCommandExists;
+  const env = options.env ?? process.env;
+  const question = options.question ?? defaultQuestion;
   const promptForSecret = options.promptForSecret ?? defaultPromptForSecret;
   const fetchImpl = options.fetchImpl ?? globalThis.fetch;
+  const providerKey = options.providerKey ?? "nvidia";
+  const apiKeyEnvName = options.apiKeyEnvName;
+  const skipConfirmation = options.skipConfirmation ?? false;
+  const skipSmoke = options.skipSmoke ?? false;
   const lines = ["Claudia Router Setup", ""];
+  const wizardLines = [];
 
   const nodeMajor = Number.parseInt(nodeVersion.split(".")[0] ?? "", 10);
   if (!Number.isInteger(nodeMajor) || nodeMajor < MINIMUM_NODE_MAJOR) {
@@ -34,140 +49,113 @@ export async function runSetup(options = {}) {
   }
   lines.push("OK   Claude Code CLI found");
 
-  ensureFile(cwd, ".env.example", ".env", lines);
-  ensureFile(cwd, "config.example.json", "config.json", lines);
-
-  const envPath = path.join(cwd, ".env");
-  const currentEnv = fs.readFileSync(envPath, "utf8");
-  let apiKey = parse(currentEnv).NVIDIA_API_KEY?.trim();
-
-  if (!isConfiguredApiKey(apiKey)) {
-    if (!options.interactive && options.interactive !== undefined) {
-      lines.push("FAIL NVIDIA_API_KEY is missing or still a placeholder");
-      lines.push("     Run `npm run setup` in an interactive terminal");
-      return setupFailure(lines);
-    }
-
-    apiKey = (await promptForSecret("Enter NVIDIA_API_KEY: ")).trim();
-    if (!isConfiguredApiKey(apiKey)) {
-      lines.push("FAIL NVIDIA_API_KEY was not provided");
-      return setupFailure(lines);
-    }
-
-    fs.writeFileSync(envPath, setEnvValue(currentEnv, "NVIDIA_API_KEY", apiKey), {
-      encoding: "utf8",
-      mode: 0o600
-    });
-    lines.push("OK   NVIDIA_API_KEY saved to .env");
-  } else {
-    lines.push("OK   NVIDIA_API_KEY already configured");
-  }
-
-  lines.push(`INFO Smoke backend: ${SMOKE_BACKEND}`);
-  lines.push(`INFO Smoke model:   ${SMOKE_MODEL}`);
-
-  try {
-    await runNvidiaSmokeRequest({
-      apiKey,
-      fetchImpl
-    });
-  } catch (error) {
-    lines.push(`FAIL NVIDIA smoke request failed: ${getErrorMessage(error)}`);
-    lines.push("     Check your NVIDIA_API_KEY and NVIDIA endpoint access, then run `npm run setup` again");
-    return setupFailure(lines);
-  }
-
-  lines.push("OK   NVIDIA smoke request completed");
-  lines.push("");
-  lines.push("Setup complete. Start the router:");
-  lines.push("npm run dev");
-
-  return {
-    exitCode: 0,
-    output: `${lines.join("\n")}\n`
+  const fileEnvPath = path.join(cwd, ".env");
+  const fileEnv = fs.existsSync(fileEnvPath) ? parse(fs.readFileSync(fileEnvPath, "utf8")) : {};
+  const mergedEnv = {
+    ...fileEnv,
+    ...env
   };
-}
 
-function ensureFile(cwd, source, target, lines) {
-  const targetPath = path.join(cwd, target);
-  if (fs.existsSync(targetPath)) {
-    lines.push(`OK   ${target} already exists`);
-    return;
-  }
-
-  fs.copyFileSync(path.join(cwd, source), targetPath);
-  lines.push(`OK   Created ${target} from ${source}`);
-}
-
-function isConfiguredApiKey(value) {
-  return Boolean(value && !PLACEHOLDER_KEYS.has(value.toLowerCase()));
-}
-
-function setEnvValue(contents, name, value) {
-  const line = `${name}=${value}`;
-  const pattern = new RegExp(`^${name}=.*$`, "m");
-
-  if (pattern.test(contents)) {
-    return contents.replace(pattern, line);
-  }
-
-  return `${contents}${contents.endsWith("\n") || contents.length === 0 ? "" : "\n"}${line}\n`;
-}
-
-async function runNvidiaSmokeRequest({ apiKey, fetchImpl }) {
-  const response = await fetchImpl(`${SMOKE_BASE_URL}/chat/completions`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      model: SMOKE_MODEL,
-      messages: [
-        {
-          role: "user",
-          content: "Reply with exactly: ok"
-        }
-      ],
-      max_tokens: 8,
-      stream: false
-    })
+  const wizardResult = await runConfigWizard({
+    cwd,
+    env: mergedEnv,
+    log: (message) => wizardLines.push(message),
+    question,
+    promptForSecret,
+    fetchImpl,
+    defaultProviderKey: providerKey,
+    providerKey,
+    skipProviderPrompt: true,
+    skipConfirmation,
+    skipSmoke,
+    apiKeyEnvName
   });
-  const bodyText = await response.text();
 
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${truncate(bodyText)}`);
+  if (typeof wizardResult === "number") {
+    return {
+      exitCode: wizardResult,
+      output: `${lines.join("\n")}\n${wizardLines.join("\n")}\n`
+    };
   }
 
-  let body;
-  try {
-    body = JSON.parse(bodyText);
-  } catch {
-    throw new Error("provider returned invalid JSON");
+  const completionLines = [];
+  if (!skipSmoke && (providerKey === "nvidia" || providerKey === "openrouter")) {
+    completionLines.push("OK   NVIDIA smoke request completed");
   }
+  completionLines.push("");
+  completionLines.push("Setup complete. Start the router:");
+  completionLines.push("npm run dev");
 
-  if (!Array.isArray(body.choices) || body.choices.length === 0) {
-    throw new Error("provider response did not include a completion");
-  }
-}
-
-function truncate(value) {
-  if (!value) {
-    return "empty response body";
-  }
-
-  return value.length > 200 ? `${value.slice(0, 200)}...` : value;
-}
-
-function getErrorMessage(error) {
-  return error instanceof Error ? error.message : "unknown error";
-}
-
-function setupFailure(lines) {
   return {
-    exitCode: 1,
-    output: `${lines.join("\n")}\n`
+    exitCode: wizardResult.exitCode,
+    output: `${lines.join("\n")}\n${wizardLines.join("\n")}\n${completionLines.join("\n")}\n`
   };
+}
+
+function parseArgs(argv) {
+  const options = {
+    providerKey: "nvidia",
+    skipConfirmation: false,
+    skipSmoke: false
+  };
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+
+    if (arg === "--help" || arg === "-h") {
+      return { help: true, options: null };
+    }
+
+    if (arg === "--yes") {
+      options.skipConfirmation = true;
+      continue;
+    }
+
+    if (arg === "--skip-smoke") {
+      options.skipSmoke = true;
+      continue;
+    }
+
+    if (arg === "--provider") {
+      const value = argv[index + 1];
+      if (!value) {
+        throw new Error("Missing value for --provider");
+      }
+
+      options.providerKey = value;
+      index += 1;
+      continue;
+    }
+
+    if (arg.startsWith("--provider=")) {
+      options.providerKey = arg.slice("--provider=".length);
+      continue;
+    }
+
+    if (arg === "--api-key-env") {
+      const value = argv[index + 1];
+      if (!value) {
+        throw new Error("Missing value for --api-key-env");
+      }
+
+      options.apiKeyEnvName = value;
+      index += 1;
+      continue;
+    }
+
+    if (arg.startsWith("--api-key-env=")) {
+      options.apiKeyEnvName = arg.slice("--api-key-env=".length);
+      continue;
+    }
+
+    throw new Error(`Unknown option: ${arg}`);
+  }
+
+  if (!["nvidia", "openrouter", "local"].includes(options.providerKey)) {
+    throw new Error(`Unsupported provider: ${options.providerKey}`);
+  }
+
+  return { help: false, options };
 }
 
 function defaultCommandExists(command) {
@@ -176,7 +164,7 @@ function defaultCommandExists(command) {
 
 async function defaultPromptForSecret(prompt) {
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
-    throw new Error("NVIDIA_API_KEY is missing. Run `npm run setup` in an interactive terminal.");
+    throw new Error("NVIDIA_API_KEY is missing. Run `npm run init` in an interactive terminal.");
   }
 
   return new Promise((resolve) => {
@@ -218,13 +206,39 @@ async function defaultPromptForSecret(prompt) {
   });
 }
 
+async function defaultQuestion(prompt) {
+  const readline = createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  try {
+    return await readline.question(prompt);
+  } finally {
+    readline.close();
+  }
+}
+
+function setupFailure(lines) {
+  return {
+    exitCode: 1,
+    output: `${lines.join("\n")}\n`
+  };
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
-    const result = await runSetup();
-    process.stdout.write(result.output);
-    process.exitCode = result.exitCode;
+    const { help, options } = parseArgs(process.argv.slice(2));
+    if (help) {
+      process.stdout.write(`${USAGE}\n`);
+      process.exitCode = 0;
+    } else {
+      const result = await runSetup(options);
+      process.stdout.write(result.output);
+      process.exitCode = result.exitCode;
+    }
   } catch (error) {
-    process.stderr.write(`FAIL ${getErrorMessage(error)}\n`);
+    process.stderr.write(`FAIL ${error instanceof Error ? error.message : "unknown error"}\n`);
     process.exitCode = 1;
   }
 }

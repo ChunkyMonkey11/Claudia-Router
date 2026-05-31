@@ -55,8 +55,7 @@ test("creates setup files, prompts for a missing key, and runs the NVIDIA smoke 
   assert.equal(requestBody?.model, "nvidia/nemotron-mini-4b-instruct");
   assert.equal(requestBody?.stream, false);
   assert.doesNotMatch(result.output, /secret-test-key/);
-  assert.match(result.output, /OK   NVIDIA smoke request completed/);
-  assert.match(result.output, /Setup complete\. Start the router:\nnpm run dev/);
+  assert.match(result.output, /Configuration complete!/);
 });
 
 test("reuses an existing key without prompting", async () => {
@@ -68,6 +67,7 @@ test("reuses an existing key without prompting", async () => {
     cwd,
     nodeVersion: "22.0.0",
     commandExists: () => true,
+    skipConfirmation: true,
     promptForSecret: async () => {
       throw new Error("prompt should not run");
     },
@@ -76,6 +76,37 @@ test("reuses an existing key without prompting", async () => {
 
   assert.equal(result.exitCode, 0);
   assert.match(result.output, /OK   NVIDIA_API_KEY already configured/);
+});
+
+test("uses api-key-env and skip-smoke for a provider override", async () => {
+  const cwd = createSetupDirectory("OPENROUTER_API_KEY=from-env\n");
+  let smokeRequestCount = 0;
+
+  const result = await runSetup({
+    cwd,
+    nodeVersion: "22.0.0",
+    commandExists: () => true,
+    env: {
+      OPENROUTER_API_KEY: "from-env"
+    },
+    providerKey: "openrouter",
+    apiKeyEnvName: "OPENROUTER_API_KEY",
+    skipSmoke: true,
+    promptForSecret: async () => {
+      throw new Error("prompt should not run");
+    },
+    fetchImpl: async () => {
+      smokeRequestCount += 1;
+      return successfulSmokeResponse();
+    }
+  });
+
+  assert.equal(result.exitCode, 0);
+  assert.equal(smokeRequestCount, 0);
+  assert.equal(parse(fs.readFileSync(path.join(cwd, ".env"), "utf8")).OPENROUTER_API_KEY, "from-env");
+  assert.equal(JSON.parse(fs.readFileSync(path.join(cwd, "config.json"), "utf8")).defaultBackend, "openrouter");
+  assert.match(result.output, /OK   OPENROUTER_API_KEY already configured/);
+  assert.doesNotMatch(result.output, /Testing connectivity/);
 });
 
 test("fails before setup when Claude Code is unavailable", async () => {
@@ -100,10 +131,45 @@ test("reports NVIDIA smoke request failures without exposing the key", async () 
     cwd,
     nodeVersion: "22.0.0",
     commandExists: () => true,
+    skipConfirmation: true,
     fetchImpl: async () => new Response("unauthorized", { status: 401 })
   });
 
-  assert.equal(result.exitCode, 1);
-  assert.match(result.output, /FAIL NVIDIA smoke request failed: HTTP 401: unauthorized/);
+  assert.equal(result.exitCode, 0);
+  assert.match(result.output, /WARN Connection test failed: HTTP 401/);
   assert.doesNotMatch(result.output, /secret-test-key/);
+});
+
+test("skips provider confirmation when asked", async () => {
+  const cwd = createSetupDirectory();
+  const result = await runSetup({
+    cwd,
+    nodeVersion: "22.0.0",
+    commandExists: () => true,
+    skipConfirmation: true,
+    promptForSecret: async () => "secret-test-key",
+    fetchImpl: async () => successfulSmokeResponse()
+  });
+
+  assert.equal(result.exitCode, 0);
+  assert.match(result.output, /Claudia Router Setup/);
+});
+
+test("stops cleanly when the configuration wizard is aborted", async () => {
+  const cwd = createSetupDirectory();
+  fs.writeFileSync(path.join(cwd, ".env"), "NVIDIA_API_KEY=placeholder\n", "utf8");
+  const result = await runSetup({
+    cwd,
+    nodeVersion: "22.0.0",
+    commandExists: () => true,
+    question: async () => "n",
+    promptForSecret: async () => {
+      throw new Error("prompt should not run");
+    },
+    fetchImpl: async () => successfulSmokeResponse()
+  });
+
+  assert.equal(result.exitCode, 0);
+  assert.match(result.output, /Aborted\./);
+  assert.doesNotMatch(result.output, /Setup complete\. Start the router:/);
 });

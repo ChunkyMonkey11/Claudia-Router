@@ -69,6 +69,11 @@ export async function runConfigWizard(options = {}) {
   const question = options.question ?? defaultQuestion;
   const promptForSecret = options.promptForSecret ?? defaultPromptForSecret;
   const fetchImpl = options.fetchImpl ?? globalThis.fetch;
+  const defaultProviderKey = options.defaultProviderKey ?? "nvidia";
+  const skipProviderPrompt = options.skipProviderPrompt ?? false;
+  const skipConfirmation = options.skipConfirmation ?? false;
+  const skipSmoke = options.skipSmoke ?? false;
+  const apiKeyEnvName = options.apiKeyEnvName;
   const envPath = path.join(cwd, ".env");
   const configPath = path.join(cwd, "config.json");
 
@@ -80,20 +85,24 @@ export async function runConfigWizard(options = {}) {
     if (fs.existsSync(envPath)) log("  OK .env exists");
     if (fs.existsSync(configPath)) log("  OK config.json exists");
 
-    const response = (await question("\nThis wizard will update your configuration. Continue? (y/N): "))
-      .trim()
-      .toLowerCase();
-    if (response !== "y" && response !== "yes") {
-      log("Aborted.");
-      return 0;
+    if (!skipConfirmation) {
+      const response = (await question("\nThis wizard will update your configuration. Continue? (y/N): "))
+        .trim()
+        .toLowerCase();
+      if (response !== "y" && response !== "yes") {
+        log("Aborted.");
+        return 0;
+      }
+      log("");
     }
-    log("");
   }
 
-  const providerKey = await promptProvider({ log, question });
+  const providerKey = skipProviderPrompt
+    ? defaultProviderKey
+    : await promptProvider({ log, question, defaultProviderKey });
   const provider = PROVIDERS[providerKey];
   const apiKey = provider.requiresKey
-    ? await promptApiKey({ provider, env, promptForSecret })
+    ? await promptApiKey({ provider, env, log, promptForSecret, apiKeyEnvName })
     : "dummy";
 
   if (!apiKey) {
@@ -106,7 +115,7 @@ export async function runConfigWizard(options = {}) {
   generateConfig(configPath, providerKey, provider);
   log("OK Configuration files created");
 
-  if (providerKey === "nvidia" || providerKey === "openrouter") {
+  if (!skipSmoke && (providerKey === "nvidia" || providerKey === "openrouter")) {
     await testConnectivity({
       baseUrl: provider.baseUrl,
       apiKey,
@@ -126,8 +135,8 @@ export async function runConfigWizard(options = {}) {
   return 0;
 }
 
-async function promptProvider({ log, question }) {
-  log("Select your AI provider:\n");
+async function promptProvider({ log, question, defaultProviderKey }) {
+  log(`Select your AI provider (default: ${PROVIDERS[defaultProviderKey].name}):\n`);
   const keys = Object.keys(PROVIDERS);
   for (const [index, key] of keys.entries()) {
     const provider = PROVIDERS[key];
@@ -137,10 +146,11 @@ async function promptProvider({ log, question }) {
   }
 
   while (true) {
-    const response = (await question("(1-3, default: 1): ")).trim();
+    const defaultIndex = keys.indexOf(defaultProviderKey) + 1 || 1;
+    const response = (await question(`(${keys.length > 0 ? `1-${keys.length}` : "1"}, default: ${defaultIndex}): `)).trim();
     if (response === "") {
-      log("Selected: NVIDIA NIM (default)");
-      return "nvidia";
+      log(`Selected: ${PROVIDERS[defaultProviderKey].name} (default)`);
+      return defaultProviderKey;
     }
 
     const index = Number.parseInt(response, 10) - 1;
@@ -154,9 +164,15 @@ async function promptProvider({ log, question }) {
   }
 }
 
-async function promptApiKey({ provider, env, promptForSecret }) {
-  const existingKey = env[provider.apiKeyEnv];
+async function promptApiKey({ provider, env, log, promptForSecret, apiKeyEnvName }) {
+  const sourceEnvName = apiKeyEnvName ?? provider.apiKeyEnv;
+  const existingKey = env[sourceEnvName];
   if (existingKey) {
+    if (sourceEnvName === provider.apiKeyEnv) {
+      log(`OK   ${provider.apiKeyEnv} already configured`);
+    } else {
+      log(`OK   API key loaded from ${sourceEnvName}`);
+    }
     return existingKey;
   }
 

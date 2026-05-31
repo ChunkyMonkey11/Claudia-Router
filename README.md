@@ -135,6 +135,21 @@ LOG_LEVEL=info
 
 If you want to switch providers later, run `npm run config`.
 
+## Automation
+
+For repeatable installs or CI, `npm run init` also accepts:
+
+- `--provider nvidia|openrouter|local` to override the default
+- `--yes` to skip confirmation prompts
+- `--skip-smoke` to skip the provider smoke test
+- `--api-key-env NAME` to read the key from an existing environment variable
+
+Example:
+
+```sh
+NVIDIA_API_KEY=your_key npm run init -- --yes --api-key-env NVIDIA_API_KEY
+```
+
 ## Config Example
 
 ```json
