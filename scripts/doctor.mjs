@@ -41,7 +41,7 @@ export function runDoctor(options = {}) {
   } else {
     failed = true;
     lines.push("FAIL .env was not found");
-    lines.push("     Run `npm run setup`");
+    lines.push("     Run `npm run init`");
   }
 
   if (fs.existsSync(configPath)) {
@@ -49,16 +49,35 @@ export function runDoctor(options = {}) {
   } else {
     failed = true;
     lines.push("FAIL config.json was not found");
-    lines.push("     Run `npm run setup`");
+    lines.push("     Run `npm run init`");
   }
 
-  const apiKey = envExists ? parse(fs.readFileSync(envPath, "utf8")).NVIDIA_API_KEY?.trim() : undefined;
+  let providerKey = "nvidia";
+  if (fs.existsSync(configPath)) {
+    try {
+      const configJson = JSON.parse(fs.readFileSync(configPath, "utf8"));
+      if (typeof configJson.defaultBackend === "string" && configJson.defaultBackend.trim()) {
+        providerKey = configJson.defaultBackend.trim();
+      }
+    } catch {
+      // Fall back to default provider check.
+    }
+  }
+
+  const providerApiKeyEnv = providerKey === "openrouter"
+    ? "OPENROUTER_API_KEY"
+    : providerKey === "local"
+      ? "LOCAL_API_KEY"
+      : "NVIDIA_API_KEY";
+
+  const envValues = envExists ? parse(fs.readFileSync(envPath, "utf8")) : {};
+  const apiKey = envValues[providerApiKeyEnv]?.trim();
   if (apiKey && !PLACEHOLDER_KEYS.has(apiKey.toLowerCase())) {
-    lines.push("OK   NVIDIA_API_KEY is configured");
+    lines.push(`OK   ${providerApiKeyEnv} is configured`);
   } else {
     failed = true;
-    lines.push("FAIL NVIDIA_API_KEY is missing or still a placeholder");
-    lines.push("     Add `NVIDIA_API_KEY=your_key` to .env");
+    lines.push(`FAIL ${providerApiKeyEnv} is missing or still a placeholder`);
+    lines.push(`     Add \`${providerApiKeyEnv}=your_key\` to .env`);
   }
 
   return {

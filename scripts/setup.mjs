@@ -19,6 +19,12 @@ Options:
   -h, --help                            Show this help message
 `;
 
+const PROVIDER_API_KEY_ENV = {
+  nvidia: "NVIDIA_API_KEY",
+  openrouter: "OPENROUTER_API_KEY",
+  local: "LOCAL_API_KEY"
+};
+
 export async function runSetup(options = {}) {
   const cwd = options.cwd ?? process.cwd();
   const nodeVersion = options.nodeVersion ?? process.versions.node;
@@ -71,24 +77,26 @@ export async function runSetup(options = {}) {
     apiKeyEnvName
   });
 
-  if (typeof wizardResult === "number") {
+  const wizardExitCode = typeof wizardResult === "number" ? wizardResult : wizardResult.exitCode;
+  const wizardOutput = `${lines.join("\n")}\n${wizardLines.join("\n")}\n`;
+  if (wizardExitCode !== 0 || wizardLines.some((line) => line.includes("Aborted."))) {
     return {
-      exitCode: wizardResult,
-      output: `${lines.join("\n")}\n${wizardLines.join("\n")}\n`
+      exitCode: wizardExitCode,
+      output: wizardOutput
     };
   }
 
   const completionLines = [];
   if (!skipSmoke && (providerKey === "nvidia" || providerKey === "openrouter")) {
-    completionLines.push("OK   NVIDIA smoke request completed");
+    completionLines.push(`OK   ${providerKey} smoke request completed`);
   }
   completionLines.push("");
   completionLines.push("Setup complete. Start the router:");
   completionLines.push("npm run dev");
 
   return {
-    exitCode: wizardResult.exitCode,
-    output: `${lines.join("\n")}\n${wizardLines.join("\n")}\n${completionLines.join("\n")}\n`
+    exitCode: wizardExitCode,
+    output: `${wizardOutput}${completionLines.join("\n")}\n`
   };
 }
 
@@ -164,7 +172,9 @@ function defaultCommandExists(command) {
 
 async function defaultPromptForSecret(prompt) {
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
-    throw new Error("NVIDIA_API_KEY is missing. Run `npm run init` in an interactive terminal.");
+    const providerMatch = /^Enter\s+([A-Z0-9_]+):/.exec(prompt);
+    const inferredEnv = providerMatch?.[1] ?? PROVIDER_API_KEY_ENV.nvidia;
+    throw new Error(`${inferredEnv} is missing. Run \`npm run init\` in an interactive terminal.`);
   }
 
   return new Promise((resolve) => {

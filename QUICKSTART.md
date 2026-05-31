@@ -2,6 +2,38 @@
 
 Get up and running in 2 minutes with your preferred AI provider.
 
+## Fastest Paths
+
+Clone once:
+
+```sh
+git clone https://github.com/ChunkyMonkey11/Claudia-Router.git
+cd Claudia-Router
+npm install
+```
+
+NVIDIA default:
+
+```sh
+npm run init
+npm run dev
+npm run claude:fast
+```
+
+Local no-key:
+
+```sh
+npm run init -- --provider local
+npm run dev
+claudia-claude --model local-model
+```
+
+If setup fails, run:
+
+```sh
+npm run doctor
+```
+
 ---
 
 ## Prerequisites (All Providers)
@@ -15,24 +47,20 @@ Get up and running in 2 minutes with your preferred AI provider.
 ## Option 1: NVIDIA NIM (Recommended for Quality)
 
 NVIDIA hosted models like `stepfun-ai/step-3.5-flash` and `z-ai/glm4.7`.
+From the cloned repo root:
 
 ```sh
-# 1. Clone and install
-git clone https://github.com/ChunkyMonkey11/Claudia-Router.git
-cd Claudia-Router
-npm install
-
-# 2. Run the one-command setup flow
+# 1. Run the one-command setup flow
 npm run init
 
-# 3. When prompted, enter your NVIDIA API key
+# 2. When prompted, enter your NVIDIA API key
 #    - The setup flow uses NVIDIA by default
 #    - It will test connectivity automatically
 
-# 4. Start the router
+# 3. Start the router
 npm run dev
 
-# 5. Open another terminal and launch Claude
+# 4. Open another terminal and launch Claude
 npm run claude:fast
 ```
 
@@ -43,24 +71,18 @@ npm run claude:fast
 ## Option 2: OpenRouter (Many Models)
 
 Access to many models (Qwen, Claude, Llama, etc.) via OpenRouter.
+From the cloned repo root:
 
 ```sh
-# 1. Clone and install
-git clone https://github.com/ChunkyMonkey11/Claudia-Router.git
-cd Claudia-Router
-npm install
+# 1. Run setup for OpenRouter
+npm run init -- --provider openrouter
 
-# 2. Run the interactive setup wizard
-npm run config
+# 2. When prompted, enter your OpenRouter API key
 
-# 3. When prompted:
-#    - Select provider: 2 (OpenRouter)
-#    - Enter your OpenRouter API key when prompted
-
-# 4. Start the router
+# 3. Start the router
 npm run dev
 
-# 5. Launch Claude
+# 4. Launch Claude
 claudia-claude --model claude-3-5-sonnet-latest
 ```
 
@@ -71,31 +93,25 @@ claudia-claude --model claude-3-5-sonnet-latest
 ## Option 3: Local Models (LM Studio / Ollama)
 
 Use models running on your own machine.
+From the cloned repo root:
 
 ```sh
-# 1. Clone and install
-git clone https://github.com/ChunkyMonkey11/Claudia-Router.git
-cd Claudia-Router
-npm install
-
-# 2. Start your local model server
+# 1. Start your local model server
 # For LM Studio: http://localhost:1234/v1
 # For Ollama: ollama serve (then configure baseUrl to http://localhost:11434/v1)
 
-# 3. Run the interactive setup wizard
-npm run config
+# 2. Run setup for local models
+npm run init -- --provider local
 
-# 4. When prompted:
-#    - Select provider: 3 (Local)
-#    - Press Enter for the dummy API key (most local servers don't require auth)
+# 3. Local uses a dummy API key by default
 
-# 5. Start the router
+# 4. Start the router
 npm run dev
 
-# 6. Test it
+# 5. Test it
 curl http://localhost:8082/health
 
-# 7. Launch Claude
+# 6. Launch Claude
 claudia-claude --model local-model
 ```
 
@@ -107,7 +123,9 @@ claudia-claude --model local-model
 |---------|-------------|
 | `npm run dev` | Start the router (development mode with logging) |
 | `npm start` | Start the router (production build) |
+| `npm run init` | First-run setup (default NVIDIA) |
 | `npm run doctor` | Check prerequisites and configuration |
+| `npm run release:check` | Release gate: typecheck + tests + build + package smoke |
 | `npm run config` | Re-run the configuration wizard |
 | `claudia-claude` | Launch Claude Code connected to the router |
 | `npm run claude:fast` | Fast coding model (stepfun-ai/step-3.5-flash) |
@@ -167,7 +185,7 @@ npm run doctor
 Make sure your router is running and `ANTHROPIC_BASE_URL` is set to `http://localhost:8082`. The `claudia-claude` wrapper sets this automatically.
 
 ### Need to switch providers later?
-Run `npm run config` again to reconfigure.
+Run `npm run init -- --provider openrouter` or `npm run init -- --provider local`, or use `npm run config` for the interactive wizard.
 
 ---
 

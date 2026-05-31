@@ -39,6 +39,8 @@
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
     "check": "npm run typecheck && npm test",
+    "release:check": "npm run check && npm run build && npm run release:smoke",
+    "release:smoke": "node scripts/release-smoke.mjs",
     "claude:fast": "node scripts/claudia-claude.mjs --model fast",
     "claude:glm": "node scripts/claudia-claude.mjs --model glm",
     "claude:smoke": "node scripts/claudia-claude.mjs --model smoke"

@@ -109,6 +109,25 @@ test("uses api-key-env and skip-smoke for a provider override", async () => {
   assert.doesNotMatch(result.output, /Testing connectivity/);
 });
 
+test("reports provider-specific smoke completion for provider overrides", async () => {
+  const cwd = createSetupDirectory("OPENROUTER_API_KEY=from-env\n");
+  const result = await runSetup({
+    cwd,
+    nodeVersion: "22.0.0",
+    commandExists: () => true,
+    env: {
+      OPENROUTER_API_KEY: "from-env"
+    },
+    providerKey: "openrouter",
+    skipConfirmation: true,
+    fetchImpl: async () => successfulSmokeResponse()
+  });
+
+  assert.equal(result.exitCode, 0);
+  assert.match(result.output, /OK   openrouter smoke request completed/);
+  assert.doesNotMatch(result.output, /NVIDIA smoke request completed/);
+});
+
 test("fails before setup when Claude Code is unavailable", async () => {
   const result = await runSetup({
     cwd: createSetupDirectory(),

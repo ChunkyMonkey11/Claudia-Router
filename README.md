@@ -27,18 +27,37 @@ Prerequisites:
 
 - Node.js 18 or newer
 - Claude Code CLI installed as `claude`
-- NVIDIA API key with access to NVIDIA hosted endpoints
+- API key only for remote providers (NVIDIA/OpenRouter). Local provider works with a dummy key.
 
-Start here:
+Install:
 
 ```sh
 git clone https://github.com/ChunkyMonkey11/Claudia-Router.git
 cd Claudia-Router
 npm install
+```
+
+Choose one setup path:
+
+1. NVIDIA default path (recommended quality):
+
+```sh
 npm run init
 ```
 
-`npm run init` is the easiest first-run path. It checks prerequisites, sets up the NVIDIA default config, prompts for your NVIDIA key if needed, runs a smoke test, and prints the command to start the router.
+2. Local no-key path:
+
+```sh
+npm run init -- --provider local
+```
+
+`npm run init` is the main first-run entrypoint for every provider. It checks prerequisites, writes `.env` and `config.json`, and prints next steps. Remote providers prompt for keys; local uses a dummy key by default.
+
+If setup fails, run:
+
+```sh
+npm run doctor
+```
 
 Start the router:
 
@@ -46,7 +65,7 @@ Start the router:
 npm run dev
 ```
 
-Run the local prerequisite checks again at any time:
+Run prerequisite checks again at any time:
 
 ```sh
 npm run doctor
@@ -133,7 +152,7 @@ LOG_LEVEL=info
 
 3. Use a mapped Claude-style model alias such as `claude-3-5-sonnet-latest`, or send any model name and Claudia Router will use the NVIDIA backend default model.
 
-If you want to switch providers later, run `npm run config`.
+If you want to switch providers later, use `npm run init -- --provider openrouter` or `npm run init -- --provider local`. Use `npm run config` if you prefer the interactive provider picker.
 
 ## Automation
 
@@ -398,17 +417,25 @@ Prompts are not logged by default.
 npm run typecheck
 npm test
 npm run build
+npm run release:smoke
+npm run release:check
 ```
 
 ## Release Checklist
 
 Before tagging a release:
 
-1. Run `npm run typecheck`, `npm test`, and `npm run build`.
+1. Run `npm run release:check`.
 2. Verify `/health` returns `200`.
 3. Verify a plain `/v1/messages` request returns an Anthropic-style message.
 4. Verify Claude Code can create and edit a small file through the router.
 5. Rotate any provider keys that were ever committed, pasted into logs, or shared during testing.
+
+`npm run release:smoke` performs a clean-package install check by running `npm pack`, installing that tarball into a fresh temp directory, then validating all setup entry paths: local (`--provider local`), OpenRouter (`--provider openrouter --api-key-env ... --skip-smoke`), and default NVIDIA (`init --api-key-env ... --skip-smoke`), with `claudia-router doctor` after each.
+
+`npm run release:check` is the main release gate. It runs `check` (typecheck + tests), `build`, and `release:smoke`.
+
+See [RELEASE_READINESS.md](./RELEASE_READINESS.md) for the requirement-by-requirement audit and current evidence.
 
 ## Limitations
 

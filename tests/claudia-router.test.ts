@@ -35,5 +35,5 @@ test("router CLI help includes init as the first-run path", () => {
 
   assert.equal(result.status, 0);
   assert.match(result.stdout, /\binit\b/);
-  assert.match(result.stdout, /Run the setup flow for NVIDIA endpoints/);
+  assert.match(result.stdout, /Run the setup flow for supported providers/);
 });

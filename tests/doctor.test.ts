@@ -8,7 +8,7 @@ import { runDoctor } from "../scripts/doctor.mjs";
 function createDoctorDirectory(env: string): string {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "claudia-router-doctor-"));
   fs.writeFileSync(path.join(directory, ".env"), env, "utf8");
-  fs.writeFileSync(path.join(directory, "config.json"), "{}", "utf8");
+  fs.writeFileSync(path.join(directory, "config.json"), JSON.stringify({ defaultBackend: "nvidia" }), "utf8");
   return directory;
 }
 
@@ -37,4 +37,19 @@ test("passes when prerequisites and NVIDIA_API_KEY are configured", () => {
   assert.match(result.output, /OK   \.env found/);
   assert.match(result.output, /OK   config\.json found/);
   assert.match(result.output, /OK   NVIDIA_API_KEY is configured/);
+});
+
+test("checks provider-specific key based on config defaultBackend", () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "claudia-router-doctor-"));
+  fs.writeFileSync(path.join(cwd, ".env"), "OPENROUTER_API_KEY=test-key\n", "utf8");
+  fs.writeFileSync(path.join(cwd, "config.json"), JSON.stringify({ defaultBackend: "openrouter" }), "utf8");
+
+  const result = runDoctor({
+    cwd,
+    nodeVersion: "22.0.0",
+    commandExists: () => true
+  });
+
+  assert.equal(result.exitCode, 0);
+  assert.match(result.output, /OK   OPENROUTER_API_KEY is configured/);
 });
