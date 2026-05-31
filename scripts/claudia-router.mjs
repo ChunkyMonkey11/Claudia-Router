@@ -20,6 +20,10 @@ const COMMANDS = {
     description: "Switch the active Claude profile",
     script: "profile.mjs"
   },
+  key: {
+    description: "Update a provider API key in .env",
+    script: "key.mjs"
+  },
   doctor: {
     description: "Run system and configuration checks",
     script: "doctor.mjs"
@@ -44,6 +48,7 @@ Commands:
   init       Run the setup flow for supported providers
   quickstart Run setup + doctor in one command
   profile    Switch the active Claude profile
+  key        Update a provider API key in .env
   doctor     Run system and configuration checks
   status     Check if the router is running
   config     Run the interactive configuration wizard

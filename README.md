@@ -63,6 +63,8 @@ If you want a different profile during onboarding, you can still pass `-- --prof
 
 If you want to set a preset during onboarding, use `npm run quickstart -- --profile glm`.
 
+If your NVIDIA key changes later, run `npm run key`.
+
 If you need the current router state in one place:
 
 ```sh

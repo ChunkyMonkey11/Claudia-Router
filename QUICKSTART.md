@@ -30,6 +30,8 @@ npm run doctor
 
 If you want a different profile during setup, you can pass `-- --profile glm`, but that is optional.
 
+If your NVIDIA key changes later, run `npm run key`.
+
 ---
 
 ## Prerequisites (All Providers)
@@ -121,6 +123,7 @@ claudia-claude --model local-model
 | `npm start` | Start the router (production build) |
 | `npm run quickstart` | One-command setup + doctor (add `-- --start` to auto-start router, `-- --profile glm` to switch profile) |
 | `npm run init` | First-run setup (default NVIDIA) |
+| `npm run key` | Update the provider API key in `.env` |
 | `npm run profile` | Open the interactive preset chooser (or use `fast`, `glm`, `qwen`, `smoke`, `toggle`, `list`, `show`) |
 | `npm run status` | Show router health plus active profile, routing summary, and next action |
 | `npm run doctor` | Check prerequisites and configuration |
