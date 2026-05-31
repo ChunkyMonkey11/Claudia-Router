@@ -16,6 +16,12 @@ test("README and QUICKSTART keep first-run setup paths aligned", () => {
 
   const requiredCommands = [
     "npm run quickstart",
+    "npm run quickstart -- --profile glm",
+    "npm run profile",
+    "npm run profile -- show",
+    "npm run profile -- list",
+    "npm run profile -- toggle",
+    "npm run status",
     "npm run init",
     "npm run init -- --provider local",
     "npm run init -- --provider openrouter",

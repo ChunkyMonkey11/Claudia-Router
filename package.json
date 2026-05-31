@@ -29,6 +29,8 @@
   "scripts": {
     "init": "node scripts/setup.mjs",
     "quickstart": "node scripts/quickstart.mjs",
+    "profile": "node scripts/profile.mjs",
+    "status": "node scripts/claudia-router.mjs status",
     "setup": "node scripts/setup.mjs",
     "config": "node scripts/claudia-config.mjs",
     "doctor": "node scripts/doctor.mjs",

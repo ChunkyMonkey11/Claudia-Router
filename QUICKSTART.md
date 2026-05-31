@@ -15,7 +15,7 @@ npm install
 NVIDIA default:
 
 ```sh
-npm run quickstart
+npm run quickstart -- --profile glm
 npm run claude:fast
 ```
 
@@ -122,8 +122,10 @@ claudia-claude --model local-model
 |---------|-------------|
 | `npm run dev` | Start the router (development mode with logging) |
 | `npm start` | Start the router (production build) |
-| `npm run quickstart` | One-command setup + doctor (add `-- --start` to auto-start router) |
+| `npm run quickstart` | One-command setup + doctor (add `-- --start` to auto-start router, `-- --profile glm` to switch profile) |
 | `npm run init` | First-run setup (default NVIDIA) |
+| `npm run profile` | Switch the active Claude profile (`fast`, `glm`, `qwen`, `smoke`, `toggle`, `list`, `show`) |
+| `npm run status` | Show router health plus active profile and routing summary |
 | `npm run doctor` | Check prerequisites and configuration |
 | `npm run release:check` | Release gate: typecheck + tests + build + package smoke |
 | `npm run config` | Re-run the configuration wizard |
@@ -186,6 +188,13 @@ Make sure your router is running and `ANTHROPIC_BASE_URL` is set to `http://loca
 
 ### Need to switch providers later?
 Run `npm run init -- --provider openrouter` or `npm run init -- --provider local`, or use `npm run config` for the interactive wizard.
+
+### Need to switch local Claude profiles?
+Run `npm run profile -- fast`, `npm run profile -- glm`, or `npm run profile -- toggle`.
+
+Run `npm run profile -- list` to see all presets.
+
+Run `npm run profile -- show` to see the current active profile.
 
 ---
 

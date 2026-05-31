@@ -15,6 +15,10 @@ const COMMANDS = {
     description: "Run setup + doctor in one command",
     script: "quickstart.mjs"
   },
+  profile: {
+    description: "Switch the active Claude profile",
+    script: "profile.mjs"
+  },
   doctor: {
     description: "Run system and configuration checks",
     script: "doctor.mjs"
@@ -38,6 +42,7 @@ const USAGE = `Usage: claudia-router <command>
 Commands:
   init       Run the setup flow for supported providers
   quickstart Run setup + doctor in one command
+  profile    Switch the active Claude profile
   doctor     Run system and configuration checks
   status     Check if the router is running
   config     Run the interactive configuration wizard
@@ -71,18 +76,42 @@ function main() {
 }
 
 async function handleStatus() {
-  // Try to read the config to determine the port
+  const cwd = process.cwd();
+  const envPath = path.resolve(cwd, ".env");
+  const configPath = path.resolve(cwd, "config.json");
+  const profileEnv = readEnvValue(envPath, "CLAUDIA_CLAUDE_MODEL");
+
+  // Try to read the config to determine the port and routing summary
   let port = 8082;
+  let configSummary = null;
   try {
-    const cwd = process.cwd();
-    const configPath = path.resolve(cwd, "config.json");
     if (fs.existsSync(configPath)) {
       const configJson = JSON.parse(fs.readFileSync(configPath, "utf8"));
       port = configJson.port ?? 8082;
+      configSummary = buildConfigSummary(configJson, profileEnv);
     }
   } catch {
     // Use default port
   }
+
+  if (!configSummary) {
+    configSummary = buildFallbackSummary(profileEnv);
+  }
+
+  console.log(`Active profile: ${configSummary.profileLabel}`);
+  if (configSummary.modelAlias) {
+    console.log(`  Model alias: ${configSummary.modelAlias}`);
+  }
+  if (configSummary.backendName) {
+    console.log(`  Backend: ${configSummary.backendName}`);
+  }
+  if (configSummary.providerModel) {
+    console.log(`  Provider model: ${configSummary.providerModel}`);
+  }
+  if (configSummary.defaultBackend) {
+    console.log(`  Config default backend: ${configSummary.defaultBackend}`);
+  }
+  console.log(`  Router port: ${port}`);
 
   let portListening = false;
   try {
@@ -124,6 +153,69 @@ async function handleStatus() {
 
   console.log(`✓ Router is running on port ${port} (port is listening)`);
   process.exit(0);
+}
+
+function readEnvValue(envPath, key) {
+  try {
+    if (!fs.existsSync(envPath)) {
+      return "";
+    }
+
+    const content = fs.readFileSync(envPath, "utf8");
+    for (const line of content.split(/\r?\n/)) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#") || !trimmed.includes("=")) continue;
+      const index = trimmed.indexOf("=");
+      const entryKey = trimmed.slice(0, index).trim();
+      if (entryKey !== key) continue;
+      return trimmed.slice(index + 1).trim();
+    }
+  } catch {
+    return "";
+  }
+
+  return "";
+}
+
+function buildFallbackSummary(profileEnv) {
+  return {
+    profileLabel: profileEnv || "not set",
+    modelAlias: profileEnv || "",
+    backendName: "",
+    providerModel: "",
+    defaultBackend: ""
+  };
+}
+
+function buildConfigSummary(configJson, profileEnv) {
+  const activeModel = profileEnv || "";
+  const modelProfile = activeModel ? configJson.modelProfiles?.[activeModel] : null;
+  const legacyMap = activeModel ? configJson.modelMap?.[activeModel] : null;
+  const backendName =
+    modelProfile?.backend ?? legacyMap?.backend ?? configJson.defaultBackend ?? "";
+  const backend = backendName ? configJson.backends?.[backendName] : null;
+  const providerModel =
+    modelProfile?.providerModel ?? modelProfile?.model ?? legacyMap?.model ?? backend?.defaultModel ?? "";
+  const alias = resolveProfileAlias(activeModel);
+
+  return {
+    profileLabel: alias ? `${alias} (${activeModel})` : activeModel || "not set",
+    modelAlias: activeModel,
+    backendName,
+    providerModel,
+    defaultBackend: configJson.defaultBackend ?? ""
+  };
+}
+
+function resolveProfileAlias(modelName) {
+  const aliases = {
+    "claude-3-5-sonnet-latest": "fast",
+    "claude-3-5-sonnet-glm": "glm",
+    "claude-3-5-sonnet-qwen": "qwen",
+    "claude-3-haiku-latest": "smoke"
+  };
+
+  return aliases[modelName] ?? "";
 }
 
 function handleVersion() {

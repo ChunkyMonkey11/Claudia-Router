@@ -3,12 +3,14 @@ import { spawn } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import { runSetup } from "./setup.mjs";
 import { runDoctor } from "./doctor.mjs";
+import { runProfile } from "./profile.mjs";
 
 const USAGE = `Usage: claudia-router quickstart [options]
 
 Options:
   --provider <nvidia|openrouter|local>  Setup provider (default: nvidia)
   --api-key-env <ENV_NAME>              Read API key from an existing environment variable
+  --profile <fast|glm|qwen|smoke|toggle> Set the active Claude profile after setup
   --yes                                 Skip confirmation prompts
   --skip-smoke                          Skip provider smoke test during setup
   --start                               Start the router after setup/doctor pass
@@ -41,6 +43,25 @@ export async function runQuickstart(options = {}) {
       exitCode: doctorResult.exitCode,
       output: `${lines.join("\n")}\n`
     };
+  }
+
+  if (options.profileName) {
+    lines.push("");
+    lines.push("Applying profile...");
+    const profileResult = runProfile({
+      cwd: options.cwd,
+      env: options.env,
+      profileName: options.profileName
+    });
+    lines.push(profileResult.output.trimEnd());
+
+    if (profileResult.exitCode !== 0) {
+      lines.push("Quickstart stopped because profile selection failed.");
+      return {
+        exitCode: profileResult.exitCode,
+        output: `${lines.join("\n")}\n`
+      };
+    }
   }
 
   if (options.startAfterSetup) {
@@ -78,6 +99,7 @@ export async function runQuickstart(options = {}) {
 function parseArgs(argv) {
   const options = {
     providerKey: "nvidia",
+    profileName: null,
     skipConfirmation: false,
     skipSmoke: false,
     startAfterSetup: false
@@ -102,6 +124,19 @@ function parseArgs(argv) {
 
     if (arg === "--start") {
       options.startAfterSetup = true;
+      continue;
+    }
+
+    if (arg === "--profile") {
+      const value = argv[i + 1];
+      if (!value) throw new Error("Missing value for --profile");
+      options.profileName = value;
+      i += 1;
+      continue;
+    }
+
+    if (arg.startsWith("--profile=")) {
+      options.profileName = arg.slice("--profile=".length);
       continue;
     }
 
@@ -136,6 +171,10 @@ function parseArgs(argv) {
 
   if (!["nvidia", "openrouter", "local"].includes(options.providerKey)) {
     throw new Error(`Unsupported provider: ${options.providerKey}`);
+  }
+
+  if (options.profileName && !["fast", "glm", "qwen", "smoke", "toggle"].includes(options.profileName)) {
+    throw new Error(`Unsupported profile: ${options.profileName}`);
   }
 
   return { help: false, options };

@@ -43,7 +43,13 @@ Default first-run path:
 npm run quickstart
 ```
 
-`quickstart` runs setup and doctor in one command. Add `-- --start` to start the router immediately after checks pass.
+`quickstart` runs setup and doctor in one command. Add `-- --start` to start the router immediately after checks pass. Add `-- --profile glm` to switch the active Claude profile during onboarding.
+
+For example:
+
+```sh
+npm run quickstart -- --profile glm
+```
 
 Alternative setup paths:
 
@@ -60,6 +66,12 @@ npm run init -- --provider local
 ```
 
 `npm run init` remains the underlying setup entrypoint for every provider. It checks prerequisites, writes `.env` and `config.json`, and prints next steps. Remote providers prompt for keys; local uses a dummy key by default.
+
+If you want the router and wrapper status in one place, use:
+
+```sh
+npm run status
+```
 
 If setup fails, run:
 
@@ -161,6 +173,10 @@ LOG_LEVEL=info
 3. Use a mapped Claude-style model alias such as `claude-3-5-sonnet-latest`, or send any model name and Claudia Router will use the NVIDIA backend default model.
 
 If you want to switch providers later, use `npm run init -- --provider openrouter` or `npm run init -- --provider local`. Use `npm run config` if you prefer the interactive provider picker.
+
+If you want to switch local Claude profiles without editing `.env`, use `npm run profile -- fast`, `npm run profile -- glm`, `npm run profile -- list`, or `npm run profile -- toggle`.
+
+Use `npm run profile -- show` to see the current active profile.
 
 ## Automation
 

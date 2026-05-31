@@ -7,39 +7,45 @@ import { runQuickstart } from "../scripts/quickstart.mjs";
 
 function createQuickstartDirectory(): string {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "claudia-router-quickstart-"));
-  fs.writeFileSync(path.join(directory, ".env.example"), "LOCAL_API_KEY=dummy\n", "utf8");
-  fs.writeFileSync(path.join(directory, "config.example.json"), "{}\n", "utf8");
+  fs.writeFileSync(
+    path.join(directory, ".env.example"),
+    "LOCAL_API_KEY=dummy\n",
+    "utf8"
+  );
+  fs.writeFileSync(path.join(directory, "config.example.json"), "{}", "utf8");
   return directory;
 }
 
-test("quickstart runs setup and doctor successfully for local provider", async () => {
+test("quickstart can set a profile after setup and doctor complete", async () => {
   const cwd = createQuickstartDirectory();
-
   const result = await runQuickstart({
     cwd,
     nodeVersion: "22.0.0",
     commandExists: () => true,
     providerKey: "local",
     skipConfirmation: true,
-    skipSmoke: true
+    skipSmoke: true,
+    profileName: "glm"
   });
 
   assert.equal(result.exitCode, 0);
   assert.match(result.output, /Quickstart complete\./);
-  assert.match(result.output, /OK   LOCAL_API_KEY is configured/);
+  assert.match(result.output, /Applying profile\.\.\./);
+  assert.match(result.output, /Active profile set to glm/);
+  assert.match(fs.readFileSync(path.join(cwd, ".env"), "utf8"), /CLAUDIA_CLAUDE_MODEL=claude-3-5-sonnet-glm/);
 });
 
-test("quickstart stops when setup fails", async () => {
-  const cwd = createQuickstartDirectory();
-
+test("quickstart rejects unsupported profile names", async () => {
   const result = await runQuickstart({
-    cwd,
+    cwd: createQuickstartDirectory(),
     nodeVersion: "22.0.0",
-    commandExists: () => false,
-    providerKey: "local"
+    commandExists: () => true,
+    providerKey: "local",
+    skipConfirmation: true,
+    skipSmoke: true,
+    profileName: "banana"
   });
 
   assert.equal(result.exitCode, 1);
-  assert.match(result.output, /FAIL Claude Code CLI was not found/);
-  assert.match(result.output, /Quickstart stopped because setup failed/);
+  assert.match(result.output, /Unsupported profile: banana/);
 });
