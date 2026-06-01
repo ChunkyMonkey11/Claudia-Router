@@ -205,6 +205,7 @@ Run `npm run profile -- show` to see the current active profile.
 
 ## What's Next?
 
+- Read the prioritized handoff in [NEXT_STEPS.md](NEXT_STEPS.md)
 - Read the full [README.md](README.md) for advanced configuration
 - Learn about [model profiles](README.md#config-example) for custom routing
 - Check the [Roadmap](README.md#roadmap) for upcoming features

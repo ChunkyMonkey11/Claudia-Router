@@ -4,10 +4,9 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import { parse } from "dotenv";
-import { getProviderApiKeyEnv } from "./providers.mjs";
+import { getProviderApiKeyEnv, isConfiguredProviderKey } from "./providers.mjs";
 
 const MINIMUM_NODE_MAJOR = 18;
-const PLACEHOLDER_KEYS = new Set(["your_nvidia_key_here", "your_actual_key", "replace_me"]);
 
 export function runDoctor(options = {}) {
   const cwd = options.cwd ?? process.cwd();
@@ -69,12 +68,12 @@ export function runDoctor(options = {}) {
 
   const envValues = envExists ? parse(fs.readFileSync(envPath, "utf8")) : {};
   const apiKey = envValues[providerApiKeyEnv]?.trim();
-  if (apiKey && !PLACEHOLDER_KEYS.has(apiKey.toLowerCase())) {
+  if (isConfiguredProviderKey(providerKey, apiKey)) {
     lines.push(`OK   ${providerApiKeyEnv} is configured`);
   } else {
     failed = true;
     lines.push(`FAIL ${providerApiKeyEnv} is missing or still a placeholder`);
-    lines.push(`     Add \`${providerApiKeyEnv}=your_key\` to .env`);
+    lines.push("     Run `npm run key`");
   }
 
   return {

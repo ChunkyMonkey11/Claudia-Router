@@ -41,6 +41,8 @@ export const INTERACTIVE_PROVIDER_CHOICES = PROVIDER_ORDER.map((providerKey) => 
   description: providerDescription(providerKey)
 }));
 
+export const PLACEHOLDER_KEYS = new Set(["your_nvidia_key_here", "your_actual_key", "replace_me"]);
+
 export function getProvider(providerKey) {
   return PROVIDERS[providerKey] ?? null;
 }
@@ -67,4 +69,12 @@ export function providerDescription(providerKey) {
 
 export function providerName(providerKey) {
   return getProvider(providerKey)?.name ?? providerKey;
+}
+
+export function isConfiguredProviderKey(providerKey, keyValue) {
+  if (!keyValue) {
+    return false;
+  }
+
+  return !PLACEHOLDER_KEYS.has(keyValue.trim().toLowerCase());
 }

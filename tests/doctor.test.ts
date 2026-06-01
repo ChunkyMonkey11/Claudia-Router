@@ -21,7 +21,7 @@ test("fails when NVIDIA_API_KEY is missing", () => {
 
   assert.equal(result.exitCode, 1);
   assert.match(result.output, /FAIL NVIDIA_API_KEY is missing or still a placeholder/);
-  assert.match(result.output, /Add `NVIDIA_API_KEY=your_key` to \.env/);
+  assert.match(result.output, /Run `npm run key`/);
 });
 
 test("passes when prerequisites and NVIDIA_API_KEY are configured", () => {

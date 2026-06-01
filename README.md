@@ -464,3 +464,5 @@ Claudia Router is text-only today. It buffers streaming responses until the prov
 - Policy layer for blocking risky actions
 - Prompt redaction
 - Claude Code-specific compatibility tests
+
+For the next implementation priorities after the current release-readiness pass, see [NEXT_STEPS.md](./NEXT_STEPS.md).

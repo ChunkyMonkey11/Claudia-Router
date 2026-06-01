@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const cliPath = path.join(repositoryRoot, "scripts", "claudia-router.mjs");
 
-function createStatusDirectory(): string {
+function createStatusDirectory(env = "NVIDIA_API_KEY=test-key\nCLAUDIA_CLAUDE_MODEL=claude-3-5-sonnet-glm\n"): string {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "claudia-router-status-"));
   fs.writeFileSync(
     path.join(directory, "config.json"),
@@ -38,7 +38,7 @@ function createStatusDirectory(): string {
     ),
     "utf8"
   );
-  fs.writeFileSync(path.join(directory, ".env"), "NVIDIA_API_KEY=test-key\nCLAUDIA_CLAUDE_MODEL=claude-3-5-sonnet-glm\n", "utf8");
+  fs.writeFileSync(path.join(directory, ".env"), env, "utf8");
   return directory;
 }
 
@@ -92,6 +92,44 @@ test("router status prints the active profile and routing summary", async () => 
     assert.match(result.stdout, /Router port: 3099/);
     assert.match(result.stdout, /✓ Router is running on port 3099/);
     assert.match(result.stdout, /Next: run `npm run claude:glm`/);
+  } finally {
+    await new Promise<void>((resolve) => {
+      server.close(() => resolve());
+    });
+  }
+});
+
+test("router status points to key rotation when the configured provider key is missing", async () => {
+  const cwd = createStatusDirectory("LOG_LEVEL=info\n");
+  const fakeLsof = createFakeLsofDirectory();
+
+  const server = http.createServer((request, response) => {
+    if (request.url === "/health") {
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(JSON.stringify({ ok: true, name: "claudia-router", version: "0.1.0" }));
+      return;
+    }
+
+    response.writeHead(404);
+    response.end();
+  });
+
+  await new Promise<void>((resolve) => {
+    server.listen(3099, resolve);
+  });
+
+  try {
+    const result = spawnSync(process.execPath, [cliPath, "status"], {
+      cwd,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        PATH: `${fakeLsof}${path.delimiter}${process.env.PATH ?? ""}`
+      }
+    });
+
+    assert.equal(result.status, 0);
+    assert.match(result.stdout, /Next: run `npm run key`/);
   } finally {
     await new Promise<void>((resolve) => {
       server.close(() => resolve());

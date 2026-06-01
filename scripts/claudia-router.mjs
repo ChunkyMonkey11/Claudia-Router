@@ -4,6 +4,7 @@ import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { getProfileAlias, getProfileNextCommand } from "./presets.mjs";
+import { getProviderApiKeyEnv, isConfiguredProviderKey } from "./providers.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 
@@ -94,7 +95,7 @@ async function handleStatus() {
     if (fs.existsSync(configPath)) {
       const configJson = JSON.parse(fs.readFileSync(configPath, "utf8"));
       port = configJson.port ?? 8082;
-      configSummary = buildConfigSummary(configJson, profileEnv);
+      configSummary = buildConfigSummary(configJson, profileEnv, envPath);
     }
   } catch {
     // Use default port
@@ -192,17 +193,21 @@ function buildFallbackSummary(profileEnv) {
     modelAlias: profileEnv || "",
     backendName: "",
     providerModel: "",
-    defaultBackend: ""
+    defaultBackend: "",
+    authConfigured: true,
+    needsSetup: true
   };
 }
 
-function buildConfigSummary(configJson, profileEnv) {
+function buildConfigSummary(configJson, profileEnv, envPath) {
   const activeModel = profileEnv || "";
   const modelProfile = activeModel ? configJson.modelProfiles?.[activeModel] : null;
   const legacyMap = activeModel ? configJson.modelMap?.[activeModel] : null;
   const backendName =
     modelProfile?.backend ?? legacyMap?.backend ?? configJson.defaultBackend ?? "";
   const backend = backendName ? configJson.backends?.[backendName] : null;
+  const providerKey = backendName || configJson.defaultBackend || "nvidia";
+  const providerApiKeyEnv = getProviderApiKeyEnv(providerKey);
   const providerModel =
     modelProfile?.providerModel ?? modelProfile?.model ?? legacyMap?.model ?? backend?.defaultModel ?? "";
   const alias = getProfileAlias(activeModel);
@@ -212,12 +217,23 @@ function buildConfigSummary(configJson, profileEnv) {
     modelAlias: activeModel,
     backendName,
     providerModel,
-    defaultBackend: configJson.defaultBackend ?? ""
+    defaultBackend: configJson.defaultBackend ?? "",
+    providerApiKeyEnv,
+    authConfigured: isConfiguredProviderKey(providerKey, readEnvValue(envPath, providerApiKeyEnv)),
+    needsSetup: false
   };
 }
 
 function getStatusNextAction(summary) {
   const alias = summary.modelAlias ? getProfileAlias(summary.modelAlias) : "";
+
+  if (summary.needsSetup) {
+    return "run `npm run init`";
+  }
+
+  if (!summary.authConfigured) {
+    return "run `npm run key`";
+  }
 
   if (!summary.modelAlias) {
     return "run `npm run claude:fast`";
@@ -225,10 +241,6 @@ function getStatusNextAction(summary) {
 
   if (!alias) {
     return "run `npm run profile` to choose a preset";
-  }
-
-  if (alias === "qwen") {
-    return `run \`${getProfileNextCommand(alias)}\``;
   }
 
   return `run \`${getProfileNextCommand(alias)}\``;
