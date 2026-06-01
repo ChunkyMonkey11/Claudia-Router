@@ -4,7 +4,7 @@ import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { getProfileAlias, getProfileNextCommand } from "./presets.mjs";
-import { getProviderApiKeyEnv, isConfiguredProviderKey } from "./providers.mjs";
+import { getProviderApiKeyEnv, isConfiguredProviderKey, providerName } from "./providers.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 
@@ -194,6 +194,7 @@ function buildFallbackSummary(profileEnv) {
     backendName: "",
     providerModel: "",
     defaultBackend: "",
+    providerLabel: "NVIDIA NIM",
     authConfigured: true,
     needsSetup: true
   };
@@ -219,6 +220,7 @@ function buildConfigSummary(configJson, profileEnv, envPath) {
     providerModel,
     defaultBackend: configJson.defaultBackend ?? "",
     providerApiKeyEnv,
+    providerLabel: providerName(providerKey),
     authConfigured: isConfiguredProviderKey(providerKey, readEnvValue(envPath, providerApiKeyEnv)),
     needsSetup: false
   };
@@ -232,7 +234,7 @@ function getStatusNextAction(summary) {
   }
 
   if (!summary.authConfigured) {
-    return "run `npm run key`";
+    return `update your ${summary.providerLabel} key with \`npm run key\``;
   }
 
   if (!summary.modelAlias) {

@@ -4,7 +4,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import { parse } from "dotenv";
-import { getProviderApiKeyEnv, isConfiguredProviderKey } from "./providers.mjs";
+import { getProviderApiKeyEnv, isConfiguredProviderKey, providerName } from "./providers.mjs";
 
 const MINIMUM_NODE_MAJOR = 18;
 
@@ -73,7 +73,7 @@ export function runDoctor(options = {}) {
   } else {
     failed = true;
     lines.push(`FAIL ${providerApiKeyEnv} is missing or still a placeholder`);
-    lines.push("     Run `npm run key`");
+    lines.push(`     Update your ${providerName(providerKey)} key with \`npm run key\``);
   }
 
   return {

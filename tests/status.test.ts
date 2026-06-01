@@ -129,7 +129,7 @@ test("router status points to key rotation when the configured provider key is m
     });
 
     assert.equal(result.status, 0);
-    assert.match(result.stdout, /Next: run `npm run key`/);
+    assert.match(result.stdout, /Next: update your NVIDIA NIM key with `npm run key`/);
   } finally {
     await new Promise<void>((resolve) => {
       server.close(() => resolve());
