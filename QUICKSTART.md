@@ -44,7 +44,7 @@ If your NVIDIA key changes later, run `npm run key`.
 
 ## Advanced: NVIDIA NIM (Recommended for Quality)
 
-NVIDIA hosted models like `z-ai/glm-5.1`, `z-ai/glm4.7`, and `qwen/qwen3.5-122b-a10b`.
+NVIDIA hosted models like `nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16`, `z-ai/glm4.7`, and `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16`.
 From the cloned repo root:
 
 ```sh
@@ -130,9 +130,9 @@ claudia-claude --model local-model
 | `npm run release:check` | Release gate: typecheck + tests + build + package smoke |
 | `npm run config` | Re-run the configuration wizard |
 | `claudia-claude` | Launch Claude Code connected to the router |
-| `npm run claude:fast` | Default long-context model (z-ai/glm-5.1) |
+| `npm run claude:fast` | Default long-context model (nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16) |
 | `npm run claude:glm` | High-quality thinking model, slower on purpose (z-ai/glm4.7) |
-| `npm run claude:qwen` | Backup coding model, less consistent on complex code (qwen/qwen3.5-122b-a10b) |
+| `npm run claude:qwen` | Backup coding model, less consistent on complex code (nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16) |
 | `npm run claude:smoke` | Quick smoke test only (nemotron-mini-4b) |
 
 ---
@@ -162,7 +162,7 @@ curl http://localhost:8082/v1/messages \
   -H "x-api-key: dummy" \
   -d '{
     "model": "claude-3-5-sonnet-latest",
-    "max_tokens": 100,
+    "max_tokens": 4096,
     "messages": [{"role": "user", "content": "Say hello"}]
   }'
 ```

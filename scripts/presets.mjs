@@ -6,7 +6,7 @@ export const PROFILE_PRESETS = {
     model: "claude-3-5-sonnet-latest",
     description: "Default long-context preset",
     nextCommand: "npm run claude:fast",
-    notes: "Default GLM-5.1 routing profile; strongest context window, but slower than smaller models"
+    notes: "Default NVIDIA Nemotron Super routing profile; strongest context window, but slower than smaller models"
   },
   glm: {
     alias: "glm",
@@ -20,7 +20,7 @@ export const PROFILE_PRESETS = {
     model: "claude-3-5-sonnet-qwen",
     description: "Fallback preset",
     nextCommand: "npm run claude:qwen",
-    notes: "Useful when GLM is unavailable, but less consistent on complex code"
+    notes: "Fallback NVIDIA Nemotron Nano routing profile; useful when the larger default is too heavy"
   },
   smoke: {
     alias: "smoke",
@@ -111,7 +111,7 @@ export function buildProfileModelProfiles(providerKey, provider) {
 
     modelProfiles[PROFILE_PRESETS.qwen.model] = {
       backend: providerKey,
-      providerModel: "qwen/qwen3.5-122b-a10b",
+      providerModel: "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16",
       retryAttempts: 3,
       retryBaseDelayMs: 500,
       notes: PROFILE_PRESETS.qwen.notes

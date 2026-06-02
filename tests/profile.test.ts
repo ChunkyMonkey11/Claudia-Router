@@ -23,14 +23,14 @@ function writeNvidiaConfig(cwd: string): void {
           nvidia: {
             baseUrl: "https://integrate.api.nvidia.com/v1",
             apiKeyEnv: "NVIDIA_API_KEY",
-            defaultModel: "z-ai/glm-5.1"
+            defaultModel: "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16"
           }
         },
         modelMap: {},
         modelProfiles: {
           "claude-3-5-sonnet-latest": {
             backend: "nvidia",
-            providerModel: "z-ai/glm-5.1"
+            providerModel: "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16"
           },
           "claude-3-5-sonnet-glm": {
             backend: "nvidia",
@@ -38,7 +38,7 @@ function writeNvidiaConfig(cwd: string): void {
           },
           "claude-3-5-sonnet-qwen": {
             backend: "nvidia",
-            providerModel: "qwen/qwen3.5-122b-a10b"
+            providerModel: "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16"
           },
           "claude-3-haiku-latest": {
             backend: "nvidia",

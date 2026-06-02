@@ -5,7 +5,7 @@
     "nvidia": {
       "baseUrl": "https://integrate.api.nvidia.com/v1",
       "apiKeyEnv": "NVIDIA_API_KEY",
-      "defaultModel": "z-ai/glm-5.1"
+      "defaultModel": "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16"
     },
     "openrouter": {
       "baseUrl": "https://openrouter.ai/api/v1",
@@ -21,10 +21,10 @@
   "modelProfiles": {
     "claude-3-5-sonnet-latest": {
       "backend": "nvidia",
-      "providerModel": "z-ai/glm-5.1",
+      "providerModel": "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16",
       "retryAttempts": 3,
       "retryBaseDelayMs": 500,
-      "notes": "Default long-context NVIDIA coding profile; better for big prompts, slightly slower than smaller models",
+      "notes": "Default long-context NVIDIA coding profile; stronger context window, slightly slower than smaller models",
       "capabilities": {
         "toolCalls": true,
         "coding": true
@@ -66,10 +66,10 @@
     },
     "claude-3-5-sonnet-qwen": {
       "backend": "nvidia",
-      "providerModel": "qwen/qwen3.5-122b-a10b",
+      "providerModel": "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16",
       "retryAttempts": 3,
       "retryBaseDelayMs": 500,
-      "notes": "Qwen fallback NVIDIA coding profile; useful as a backup, but less consistent on complex code",
+      "notes": "Nano fallback NVIDIA coding profile; useful as a backup, but lighter than the default",
       "capabilities": {
         "toolCalls": true,
         "coding": true
@@ -90,7 +90,7 @@
   "modelMap": {
     "legacy-claude-3-5-sonnet-latest": {
       "backend": "nvidia",
-      "model": "z-ai/glm-5.1"
+      "model": "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16"
     }
   }
 }
