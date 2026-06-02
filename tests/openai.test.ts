@@ -275,6 +275,83 @@ test("polls pending NVIDIA responses until the result is ready", async () => {
   }
 });
 
+test("automatically shrinks completion budget when the provider reports a context overflow", async () => {
+  const originalFetch = globalThis.fetch;
+  const maxTokensSeen: number[] = [];
+  let attempts = 0;
+
+  globalThis.fetch = async (_input, init) => {
+    attempts += 1;
+    const requestBody = JSON.parse(String(init?.body)) as { max_tokens: number };
+    maxTokensSeen.push(requestBody.max_tokens);
+
+    if (attempts === 1) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "This model's maximum context length is 4096 tokens. However, you requested 4439 tokens (343 in the messages, 4096 in the completion). Please reduce the length of the messages or completion."
+        }),
+        {
+          status: 400,
+          headers: {
+            "content-type": "application/json"
+          }
+        }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({
+        model: "test-model",
+        choices: [
+          {
+            message: {
+              role: "assistant",
+              content: "ok"
+            },
+            finish_reason: "stop"
+          }
+        ],
+        usage: {
+          prompt_tokens: 343,
+          completion_tokens: 12
+        }
+      }),
+      {
+        status: 200,
+        headers: {
+          "content-type": "application/json"
+        }
+      }
+    );
+  };
+
+  try {
+    const result = await callOpenAICompatibleBackend({
+      backend: {
+        baseUrl: "https://provider.test/v1",
+        apiKeyEnv: "TEST_API_KEY",
+        defaultModel: "test-model"
+      },
+      request: {
+        model: "test-model",
+        messages: [
+          {
+            role: "user",
+            content: "Say ok"
+          }
+        ],
+        max_tokens: 4096
+      }
+    });
+
+    assert.equal(result.text, "ok");
+    assert.deepEqual(maxTokensSeen, [4096, 3752]);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("formats completed responses as Anthropic SSE events", () => {
   const stream = buildAnthropicStream({
     id: "msg_test",

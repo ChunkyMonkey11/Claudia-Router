@@ -91,10 +91,10 @@ Claudia Router Model Profiles
 
 Shortcuts (use with --model or in npm scripts):
 
-  --model fast     Fast coding: stepfun-ai/step-3.5-flash (NVIDIA)
-  --model glm      High-quality: z-ai/glm4.7 with thinking (NVIDIA)
-  --model qwen     Fallback: qwen/qwen3.5-122b-a10b (NVIDIA)
-  --model smoke    Lightweight: nvidia/nemotron-mini-4b-instruct (NVIDIA)
+  --model fast     Default: z-ai/glm-5.1 (NVIDIA) — best long-context option, a bit slower
+  --model glm      Thinking-heavy: z-ai/glm4.7 (NVIDIA) — slower, but better on hard tasks
+  --model qwen     Fallback: qwen/qwen3.5-122b-a10b (NVIDIA) — useful fallback, less consistent
+  --model smoke    Lightweight: nvidia/nemotron-mini-4b-instruct (NVIDIA) — for quick checks only
 
   Built-in npm scripts:
 

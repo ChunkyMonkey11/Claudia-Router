@@ -125,7 +125,14 @@ npm run claude:fast -- --managed-auth
 
 If you see a managed-login warning, remove `--managed-auth`. Claude managed credentials are sent only to the local router; your NVIDIA key is sent to NVIDIA by the router.
 
-The fast script and default wrapper route `claude-3-5-sonnet-latest` to NVIDIA `stepfun-ai/step-3.5-flash`. Use `npm run claude:glm` for the slower GLM quality profile, `npm run claude:qwen` for the Qwen fallback, or `npm run claude:smoke` to test routing with the smallest configured model.
+The fast script and default wrapper route `claude-3-5-sonnet-latest` to NVIDIA `z-ai/glm-5.1`. Use `npm run claude:glm` for the slower thinking-heavy GLM quality profile, `npm run claude:qwen` for the Qwen fallback, or `npm run claude:smoke` to test routing with the smallest configured model.
+
+Model tradeoffs:
+
+- `fast`: best default for long prompts and coding; slower than smaller models, but much less likely to hit context limits
+- `glm`: stronger on hard tasks when it reasons longer, but slower
+- `qwen`: backup option when you want a different model family, but less consistent on complex code
+- `smoke`: smallest and quickest option for health checks, not real work
 
 ### Check the router
 
@@ -169,7 +176,7 @@ LOG_LEVEL=info
 
 2. Keep `defaultBackend` set to `nvidia` in `config.json`.
 
-3. Use a mapped Claude-style model alias such as `claude-3-5-sonnet-latest`, or send any model name and Claudia Router will use the NVIDIA backend default model.
+3. Use a mapped Claude-style model alias such as `claude-3-5-sonnet-latest`, or send any model name and Claudia Router will use the NVIDIA backend default model (`z-ai/glm-5.1`).
 
 If you want to switch providers later, use `npm run init -- --provider openrouter` or `npm run init -- --provider local`. Use `npm run config` if you prefer the interactive provider picker.
 

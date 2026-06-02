@@ -192,6 +192,7 @@ export async function callOpenAICompatibleBackend(args: {
   const timeout = setTimeout(() => controller.abort(), PROVIDER_TIMEOUT_MS);
   const maxAttempts = Math.max(1, args.retryAttempts ?? PROVIDER_DEFAULT_MAX_ATTEMPTS);
   const retryBaseDelayMs = Math.max(0, args.retryBaseDelayMs ?? PROVIDER_DEFAULT_RETRY_BASE_MS);
+  let requestToSend = args.request;
 
   try {
     const headers: Record<string, string> = {
@@ -209,7 +210,7 @@ export async function callOpenAICompatibleBackend(args: {
       response = await fetch(`${args.backend.baseUrl}/chat/completions`, {
         method: "POST",
         headers,
-        body: JSON.stringify(args.request),
+        body: JSON.stringify(requestToSend),
         signal: controller.signal
       });
 
@@ -222,6 +223,31 @@ export async function callOpenAICompatibleBackend(args: {
           bodyText,
           signal: controller.signal
         }));
+      }
+
+      const contextLimit = parseContextLengthError(bodyText);
+      if (
+        response.status === 400 &&
+        contextLimit &&
+        requestToSend.max_tokens > 1
+      ) {
+        if (contextLimit.promptTokens >= contextLimit.limit) {
+          throw new ClaudiaError(
+            "invalid_request_error",
+            `Prompt exceeds the model context window of ${contextLimit.limit} tokens. Choose a larger-context model or shorten the conversation.`,
+            400
+          );
+        }
+
+        const adjustedMaxTokens = Math.max(1, contextLimit.limit - contextLimit.promptTokens - 1);
+
+        if (adjustedMaxTokens < requestToSend.max_tokens) {
+          requestToSend = {
+            ...requestToSend,
+            max_tokens: adjustedMaxTokens
+          };
+          continue;
+        }
       }
 
       if (response.ok || !shouldRetryProviderStatus(response.status) || attempt === maxAttempts) {
@@ -318,6 +344,22 @@ function truncateProviderBody(body: string): string {
   }
 
   return body.length > 500 ? `${body.slice(0, 500)}...` : body;
+}
+
+function parseContextLengthError(bodyText: string): { limit: number; promptTokens: number; completionTokens: number } | null {
+  const match = bodyText.match(
+    /maximum context length is (\d+) tokens[\s\S]*?requested (\d+) tokens \((\d+) in the messages, (\d+) in the completion\)/i
+  );
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    limit: Number(match[1]),
+    promptTokens: Number(match[3]),
+    completionTokens: Number(match[4])
+  };
 }
 
 async function pollPendingProviderResponse(args: {

@@ -4,30 +4,30 @@ export const PROFILE_PRESETS = {
   fast: {
     alias: "fast",
     model: "claude-3-5-sonnet-latest",
-    description: "Default coding preset",
+    description: "Default long-context preset",
     nextCommand: "npm run claude:fast",
-    notes: "Fast coding profile"
+    notes: "Default GLM-5.1 routing profile; strongest context window, but slower than smaller models"
   },
   glm: {
     alias: "glm",
     model: "claude-3-5-sonnet-glm",
-    description: "Higher-quality GLM preset",
+    description: "Thinking-heavy preset",
     nextCommand: "npm run claude:glm",
-    notes: "Explicit GLM 4.7 profile for harder coding tasks"
+    notes: "More deliberate reasoning, but slower and better for hard coding tasks"
   },
   qwen: {
     alias: "qwen",
     model: "claude-3-5-sonnet-qwen",
-    description: "Qwen fallback preset",
+    description: "Fallback preset",
     nextCommand: "npm run claude:qwen",
-    notes: "Qwen fallback NVIDIA coding profile"
+    notes: "Useful when GLM is unavailable, but less consistent on complex code"
   },
   smoke: {
     alias: "smoke",
     model: "claude-3-haiku-latest",
     description: "Smallest smoke-test preset",
     nextCommand: "npm run claude:smoke",
-    notes: "Smoke-test/free-small NVIDIA profile"
+    notes: "Fast and cheap for checks, but not intended for real coding work"
   }
 };
 
@@ -69,9 +69,9 @@ export function buildInteractiveChoices(config) {
     key: alias,
     kind: "profile",
     profileName: alias,
-    label: alias,
-    description: PROFILE_PRESETS[alias].description
-  }));
+      label: alias,
+      description: PROFILE_PRESETS[alias].description
+    }));
 
   return [...profileChoices, ...INTERACTIVE_PROVIDER_CHOICES];
 }

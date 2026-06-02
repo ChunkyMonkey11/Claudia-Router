@@ -23,14 +23,14 @@ function writeNvidiaConfig(cwd: string): void {
           nvidia: {
             baseUrl: "https://integrate.api.nvidia.com/v1",
             apiKeyEnv: "NVIDIA_API_KEY",
-            defaultModel: "stepfun-ai/step-3.5-flash"
+            defaultModel: "z-ai/glm-5.1"
           }
         },
         modelMap: {},
         modelProfiles: {
           "claude-3-5-sonnet-latest": {
             backend: "nvidia",
-            providerModel: "stepfun-ai/step-3.5-flash"
+            providerModel: "z-ai/glm-5.1"
           },
           "claude-3-5-sonnet-glm": {
             backend: "nvidia",
