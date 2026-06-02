@@ -4,10 +4,10 @@ export const PROVIDERS = {
     name: "NVIDIA NIM",
     baseUrl: "https://integrate.api.nvidia.com/v1",
     apiKeyEnv: "NVIDIA_API_KEY",
-    defaultModel: "stepfun-ai/step-3.5-flash",
+    defaultModel: "z-ai/glm-5.1",
     smokeModel: "nvidia/nemotron-mini-4b-instruct",
     requiresKey: true,
-    description: "Fast, high-quality models hosted by NVIDIA"
+    description: "Long-context and coding-capable models hosted by NVIDIA"
   },
   openrouter: {
     key: "openrouter",

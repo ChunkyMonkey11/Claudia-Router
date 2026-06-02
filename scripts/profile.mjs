@@ -17,9 +17,9 @@ import {
 const USAGE = `Usage: claudia-router profile [name|show|list|toggle]
 
 Commands:
-  fast     Set the active Claude profile to fast
-  glm      Set the active Claude profile to GLM quality
-  qwen     Set the active Claude profile to Qwen fallback
+  fast     Set the active Claude profile to the default long-context model
+  glm      Set the active Claude profile to the slower thinking-heavy model
+  qwen     Set the active Claude profile to the backup model
   smoke    Set the active Claude profile to the smoke-test model
   list     Show all available profile presets
   toggle   Switch between fast and glm

@@ -44,7 +44,7 @@ If your NVIDIA key changes later, run `npm run key`.
 
 ## Advanced: NVIDIA NIM (Recommended for Quality)
 
-NVIDIA hosted models like `stepfun-ai/step-3.5-flash` and `z-ai/glm4.7`.
+NVIDIA hosted models like `z-ai/glm-5.1`, `z-ai/glm4.7`, and `qwen/qwen3.5-122b-a10b`.
 From the cloned repo root:
 
 ```sh
@@ -130,10 +130,10 @@ claudia-claude --model local-model
 | `npm run release:check` | Release gate: typecheck + tests + build + package smoke |
 | `npm run config` | Re-run the configuration wizard |
 | `claudia-claude` | Launch Claude Code connected to the router |
-| `npm run claude:fast` | Fast coding model (stepfun-ai/step-3.5-flash) |
-| `npm run claude:glm` | High-quality model with thinking (z-ai/glm4.7) |
-| `npm run claude:qwen` | Qwen coding model (qwen/qwen3.5-122b-a10b) |
-| `npm run claude:smoke` | Quick smoke test (nemotron-mini-4b) |
+| `npm run claude:fast` | Default long-context model (z-ai/glm-5.1) |
+| `npm run claude:glm` | High-quality thinking model, slower on purpose (z-ai/glm4.7) |
+| `npm run claude:qwen` | Backup coding model, less consistent on complex code (qwen/qwen3.5-122b-a10b) |
+| `npm run claude:smoke` | Quick smoke test only (nemotron-mini-4b) |
 
 ---
 

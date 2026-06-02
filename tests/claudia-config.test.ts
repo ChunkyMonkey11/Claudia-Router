@@ -71,6 +71,7 @@ test("configuration wizard awaits remote connectivity before completion", async 
   assert.match(logs.join("\n"), /OK Connected to nvidia successfully/);
   assert.match(logs.join("\n"), /Configuration complete!/);
   const config = JSON.parse(fs.readFileSync(path.join(cwd, "config.json"), "utf8"));
+  assert.equal(config.modelProfiles["claude-3-5-sonnet-latest"]?.providerModel, "z-ai/glm-5.1");
   assert.equal(config.modelProfiles["claude-3-5-sonnet-glm"]?.providerModel, "z-ai/glm4.7");
   assert.equal(config.modelProfiles["claude-3-5-sonnet-qwen"]?.providerModel, "qwen/qwen3.5-122b-a10b");
 });
