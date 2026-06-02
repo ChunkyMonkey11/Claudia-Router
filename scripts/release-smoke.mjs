@@ -144,6 +144,20 @@ function main() {
 
     const nvidiaConfig = readJson(configPath);
     assert(nvidiaConfig.defaultBackend === "nvidia", `Expected defaultBackend=nvidia, got ${nvidiaConfig.defaultBackend}`);
+    assert(
+      nvidiaConfig.backends?.nvidia?.defaultModel === "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16",
+      `Expected NVIDIA defaultModel to use the Nemotron Super model, got ${nvidiaConfig.backends?.nvidia?.defaultModel}`
+    );
+    assert(
+      nvidiaConfig.modelProfiles?.["claude-3-5-sonnet-latest"]?.providerModel ===
+        "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16",
+      "Expected fast profile to use the Nemotron Super model"
+    );
+    assert(
+      nvidiaConfig.modelProfiles?.["claude-3-5-sonnet-qwen"]?.providerModel ===
+        "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16",
+      "Expected qwen fallback profile to use the Nemotron Nano model"
+    );
     const nvidiaEnvFile = fs.readFileSync(envPath, "utf8");
     assert(nvidiaEnvFile.includes("NVIDIA_API_KEY=nvidia-test-key"), ".env did not persist NVIDIA_API_KEY");
 

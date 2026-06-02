@@ -54,6 +54,17 @@ test("creates setup files, prompts for a missing key, and runs the NVIDIA smoke 
   assert.equal(authorization, "Bearer secret-test-key");
   assert.equal(requestBody?.model, "nvidia/nemotron-mini-4b-instruct");
   assert.equal(requestBody?.stream, false);
+  const generatedConfig = JSON.parse(fs.readFileSync(path.join(cwd, "config.json"), "utf8")) as {
+    modelProfiles: Record<string, { providerModel?: string }>;
+  };
+  assert.equal(
+    generatedConfig.modelProfiles["claude-3-5-sonnet-latest"]?.providerModel,
+    "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16"
+  );
+  assert.equal(
+    generatedConfig.modelProfiles["claude-3-5-sonnet-qwen"]?.providerModel,
+    "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16"
+  );
   assert.doesNotMatch(result.output, /secret-test-key/);
   assert.match(result.output, /Configuration complete!/);
 });
