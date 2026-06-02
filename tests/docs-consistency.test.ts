@@ -16,22 +16,41 @@ test("README and QUICKSTART keep first-run setup paths aligned", () => {
 
   const requiredCommands = [
     "npm run quickstart",
-    "npm run quickstart -- --profile glm",
+    "npm run doctor",
+    "npm run status",
     "npm run profile",
+    "npm run init",
+    "npm run claude:fast",
+    "npm run release:check"
+  ];
+
+  const readmeOnlyCommands = [
+    "npm install -g claudia-router",
+    "npx claudia-router init",
+    "npx claudia-router doctor",
+    "npm run publish:check"
+  ];
+
+  const quickstartOnlyCommands = [
+    "npm run quickstart -- --profile glm",
+    "npm run init -- --provider openrouter",
+    "npm run claude:qwen",
     "npm run profile -- show",
     "npm run profile -- list",
     "npm run profile -- toggle",
-    "npm run status",
-    "npm run init",
     "npm run init -- --provider local",
-    "npm run init -- --provider openrouter",
-    "npm run doctor",
-    "npm run claude:qwen",
-    "npm run release:check"
   ];
 
   for (const command of requiredCommands) {
     assert.match(readme, new RegExp(command.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    assert.match(quickstart, new RegExp(command.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  for (const command of readmeOnlyCommands) {
+    assert.match(readme, new RegExp(command.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  for (const command of quickstartOnlyCommands) {
     assert.match(quickstart, new RegExp(command.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
 });
@@ -40,7 +59,8 @@ test("README explicitly documents current limitations", () => {
   const readme = read("README.md");
 
   assert.match(readme, /## Limitations/);
-  assert.match(readme, /Token-by-token provider streaming passthrough/);
+  assert.match(readme, /text-only today/i);
+  assert.match(readme, /streaming responses/i);
   assert.match(readme, /Vision/);
   assert.match(readme, /full Claude Code compatibility/i);
 });

@@ -74,7 +74,7 @@ export async function runConfigWizard(options = {}) {
   log("  1. Review and adjust modelProfiles in config.json if needed");
   log("  2. Start the router: npm run dev");
   log("  3. Test with: curl http://localhost:8082/health");
-  log("  4. Use Claude: npm run claude:fast (or run npm link once for claudia-claude)");
+  log("  4. Use Claude: npm run claude:fast (or install the package globally to use claudia-claude anywhere)");
   log("\nConfiguration complete!");
   return 0;
 }

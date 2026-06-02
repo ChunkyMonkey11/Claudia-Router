@@ -9,6 +9,11 @@
     "claudia-config": "scripts/claudia-config.mjs",
     "claudia-router": "scripts/claudia-router.mjs"
   },
+  "preferGlobal": true,
+  "publishConfig": {
+    "access": "public",
+    "tag": "latest"
+  },
   "files": [
     ".env.example",
     "LICENSE",
@@ -40,6 +45,8 @@
     "start": "npm run build && node dist/index.js",
     "serve": "node dist/index.js",
     "prepack": "npm run build",
+    "prepublishOnly": "npm run build",
+    "publish:check": "npm run release:check && npm pack --dry-run",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
     "check": "npm run typecheck && npm test",
