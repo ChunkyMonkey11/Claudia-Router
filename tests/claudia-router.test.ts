@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
@@ -6,6 +7,7 @@ import { fileURLToPath } from "node:url";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const cliPath = path.join(repositoryRoot, "scripts", "claudia-router.mjs");
+const packageVersion = JSON.parse(fs.readFileSync(path.join(repositoryRoot, "package.json"), "utf8")).version;
 
 test("router CLI reports the package version", () => {
   const result = spawnSync(process.execPath, [cliPath, "version"], {
@@ -14,7 +16,7 @@ test("router CLI reports the package version", () => {
   });
 
   assert.equal(result.status, 0);
-  assert.match(result.stdout, /Claudia Router v0\.1\.0/);
+  assert.match(result.stdout, new RegExp(`Claudia Router v${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
 });
 
 test("router CLI can delegate to the doctor command in ESM mode", () => {
