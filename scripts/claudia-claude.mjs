@@ -91,9 +91,9 @@ Claudia Router Model Profiles
 
 Shortcuts (use with --model or in npm scripts):
 
-  --model fast     Default: nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16 (NVIDIA) — best long-context option, a bit slower
+  --model fast     Default: nvidia/nemotron-3-super-120b-a12b (NVIDIA) — best long-context option, a bit slower
   --model glm      Thinking-heavy: z-ai/glm4.7 (NVIDIA) — slower, but better on hard tasks
-  --model qwen     Fallback: nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16 (NVIDIA) — useful fallback, less consistent
+  --model qwen     Fallback: nvidia/nemotron-3-nano-30b-a3b (NVIDIA) — useful fallback, less consistent
   --model smoke    Lightweight: nvidia/nemotron-mini-4b-instruct (NVIDIA) — for quick checks only
 
   Built-in npm scripts:

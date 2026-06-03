@@ -44,7 +44,7 @@ If your NVIDIA key changes later, run `npm run key`.
 
 ## Advanced: NVIDIA NIM (Recommended for Quality)
 
-NVIDIA hosted models like `nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16`, `z-ai/glm4.7`, and `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16`.
+NVIDIA hosted models like `nvidia/nemotron-3-super-120b-a12b`, `z-ai/glm4.7`, and `nvidia/nemotron-3-nano-30b-a3b`.
 From the cloned repo root:
 
 ```sh
@@ -130,9 +130,9 @@ claudia-claude --model local-model
 | `npm run release:check` | Release gate: typecheck + tests + build + package smoke |
 | `npm run config` | Re-run the configuration wizard |
 | `claudia-claude` | Launch Claude Code connected to the router |
-| `npm run claude:fast` | Default long-context model (nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16) |
+| `npm run claude:fast` | Default long-context model (nvidia/nemotron-3-super-120b-a12b) |
 | `npm run claude:glm` | High-quality thinking model, slower on purpose (z-ai/glm4.7) |
-| `npm run claude:qwen` | Backup coding model, less consistent on complex code (nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16) |
+| `npm run claude:qwen` | Backup coding model, less consistent on complex code (nvidia/nemotron-3-nano-30b-a3b) |
 | `npm run claude:smoke` | Quick smoke test only (nemotron-mini-4b) |
 
 ---

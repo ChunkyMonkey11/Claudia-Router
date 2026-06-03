@@ -59,11 +59,11 @@ test("creates setup files, prompts for a missing key, and runs the NVIDIA smoke 
   };
   assert.equal(
     generatedConfig.modelProfiles["claude-3-5-sonnet-latest"]?.providerModel,
-    "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16"
+    "nvidia/nemotron-3-super-120b-a12b"
   );
   assert.equal(
     generatedConfig.modelProfiles["claude-3-5-sonnet-qwen"]?.providerModel,
-    "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16"
+    "nvidia/nemotron-3-nano-30b-a3b"
   );
   assert.doesNotMatch(result.output, /secret-test-key/);
   assert.match(result.output, /Configuration complete!/);

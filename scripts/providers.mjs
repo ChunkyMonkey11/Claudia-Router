@@ -4,7 +4,7 @@ export const PROVIDERS = {
     name: "NVIDIA NIM",
     baseUrl: "https://integrate.api.nvidia.com/v1",
     apiKeyEnv: "NVIDIA_API_KEY",
-    defaultModel: "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16",
+    defaultModel: "nvidia/nemotron-3-super-120b-a12b",
     smokeModel: "nvidia/nemotron-mini-4b-instruct",
     requiresKey: true,
     description: "Long-context and coding-capable models hosted by NVIDIA"

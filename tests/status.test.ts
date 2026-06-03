@@ -22,7 +22,7 @@ function createStatusDirectory(env = "NVIDIA_API_KEY=test-key\nCLAUDIA_CLAUDE_MO
           nvidia: {
             baseUrl: "https://example.invalid/v1",
             apiKeyEnv: "NVIDIA_API_KEY",
-            defaultModel: "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16"
+            defaultModel: "nvidia/nemotron-3-super-120b-a12b"
           }
         },
         modelMap: {},
