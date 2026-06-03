@@ -5,7 +5,7 @@
     "nvidia": {
       "baseUrl": "https://integrate.api.nvidia.com/v1",
       "apiKeyEnv": "NVIDIA_API_KEY",
-      "defaultModel": "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16"
+      "defaultModel": "nvidia/nemotron-3-super-120b-a12b"
     },
     "openrouter": {
       "baseUrl": "https://openrouter.ai/api/v1",
@@ -21,9 +21,17 @@
   "modelProfiles": {
     "claude-3-5-sonnet-latest": {
       "backend": "nvidia",
-      "providerModel": "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16",
+      "providerModel": "nvidia/nemotron-3-super-120b-a12b",
       "retryAttempts": 3,
       "retryBaseDelayMs": 500,
+      "extraBody": {
+        "chat_template_kwargs": {
+          "enable_thinking": false,
+          "force_nonempty_content": true
+        },
+        "temperature": 1,
+        "top_p": 0.95
+      },
       "notes": "Default long-context NVIDIA coding profile; stronger context window, slightly slower than smaller models",
       "capabilities": {
         "toolCalls": true,
@@ -66,9 +74,15 @@
     },
     "claude-3-5-sonnet-qwen": {
       "backend": "nvidia",
-      "providerModel": "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16",
+      "providerModel": "nvidia/nemotron-3-nano-30b-a3b",
       "retryAttempts": 3,
       "retryBaseDelayMs": 500,
+      "extraBody": {
+        "chat_template_kwargs": {
+          "enable_thinking": false,
+          "force_nonempty_content": true
+        }
+      },
       "notes": "Nano fallback NVIDIA coding profile; useful as a backup, but lighter than the default",
       "capabilities": {
         "toolCalls": true,
@@ -90,7 +104,7 @@
   "modelMap": {
     "legacy-claude-3-5-sonnet-latest": {
       "backend": "nvidia",
-      "model": "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16"
+      "model": "nvidia/nemotron-3-super-120b-a12b"
     }
   }
 }

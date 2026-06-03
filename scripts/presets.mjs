@@ -83,6 +83,16 @@ export function buildProfileModelProfiles(providerKey, provider) {
       providerModel: provider.defaultModel,
       retryAttempts: 3,
       retryBaseDelayMs: 500,
+      extraBody: providerKey === "nvidia"
+        ? {
+            chat_template_kwargs: {
+              enable_thinking: false,
+              force_nonempty_content: true
+            },
+            temperature: 1.0,
+            top_p: 0.95
+          }
+        : undefined,
       notes: PROFILE_PRESETS.fast.notes
     },
     [PROFILE_PRESETS.smoke.model]: {
@@ -111,9 +121,15 @@ export function buildProfileModelProfiles(providerKey, provider) {
 
     modelProfiles[PROFILE_PRESETS.qwen.model] = {
       backend: providerKey,
-      providerModel: "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16",
+      providerModel: "nvidia/nemotron-3-nano-30b-a3b",
       retryAttempts: 3,
       retryBaseDelayMs: 500,
+      extraBody: {
+        chat_template_kwargs: {
+          enable_thinking: false,
+          force_nonempty_content: true
+        }
+      },
       notes: PROFILE_PRESETS.qwen.notes
     };
   }

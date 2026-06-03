@@ -73,11 +73,11 @@ test("configuration wizard awaits remote connectivity before completion", async 
   const config = JSON.parse(fs.readFileSync(path.join(cwd, "config.json"), "utf8"));
   assert.equal(
     config.modelProfiles["claude-3-5-sonnet-latest"]?.providerModel,
-    "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16"
+    "nvidia/nemotron-3-super-120b-a12b"
   );
   assert.equal(config.modelProfiles["claude-3-5-sonnet-glm"]?.providerModel, "z-ai/glm4.7");
   assert.equal(
     config.modelProfiles["claude-3-5-sonnet-qwen"]?.providerModel,
-    "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16"
+    "nvidia/nemotron-3-nano-30b-a3b"
   );
 });
